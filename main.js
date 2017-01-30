@@ -86,7 +86,8 @@ function complete() {
       console.log();
 
       var toFind = [
-        "done",
+        "INSATIABLE",
+        "HCPRAATEU",
       ];
       toFind.forEach(f => {
         console.log("Looking for matches for: " + f);
