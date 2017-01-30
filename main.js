@@ -1,3 +1,7 @@
+// Copywrite Carl Walsh
+// 
+// Run this file from the command line: "node main.js"
+
 var fs = require('fs');
 
 function readLines(input, func, callback) {
