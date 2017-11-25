@@ -9,12 +9,49 @@ namespace MathExpTests
     public class LexerTests
     {
         [TestMethod]
-        public void Lexes() {
+        public void Expression() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { type = TokenType.number, start = 1, end = 3},
-                    new Token {type = TokenType.number, start = 3, end = 4 },
-                }, new Lexer().Lex(" 12 +").ToList());
+                    new Token { Type = TokenType.Number, Start = 1, Length = 2 },
+                    new Token { Type = TokenType.Op, Start = 4, Length = 1 },
+                    new Token { Type = TokenType.Variable, Start = 6, Length = 2 },
+                }, new Lexer().Lex(" 12 + $a ").ToList());
+
+            CollectionAssert.AreEqual(
+                new[] {
+                    new Token { Type = TokenType.Number, Start = 0, Length = 2 },
+                    new Token { Type = TokenType.Op, Start = 2, Length = 1 },
+                    new Token { Type = TokenType.Variable, Start = 3, Length = 2 },
+                }, new Lexer().Lex("12+$a").ToList());
+        }
+        [TestMethod]
+        public void Ops() {
+            CollectionAssert.AreEqual(
+                new[] {
+                    new Token { Type = TokenType.Op, Start = 0, Length = 1 },
+                    new Token { Type = TokenType.Op, Start = 1, Length = 1 },
+                    new Token { Type = TokenType.Op, Start = 2, Length = 1 },
+                    new Token { Type = TokenType.Op, Start = 3, Length = 1 },
+                }, new Lexer().Lex("+-*/").ToList());
+        }
+
+        [TestMethod]
+        public void Variable() {
+            CollectionAssert.AreEqual(
+                new[] {
+                    new Token { Type = TokenType.Variable, Start = 0, Length = 2 },
+                }, new Lexer().Lex("$a").ToList());
+        }
+
+        [TestMethod]
+        public void Unknown() {
+            Assert.ThrowsException<Exception>(
+                () => new Lexer().Lex("\0").ToList(),
+                "Unknown token starting at: \0");
+
+            Assert.ThrowsException<Exception>(
+                () => new Lexer().Lex("\0 0123456789").ToList(),
+                "Unknown token starting at: \0 012345678");
         }
     }
 }
