@@ -39,8 +39,17 @@ namespace MathExpTests
         public void Variable() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Variable, Start = 0, Length = 2 },
-                }, new Lexer().Lex("$a").ToList());
+                    new Token { Type = TokenType.Variable, Start = 0, Length = 3 },
+                }, new Lexer().Lex("$a0").ToList());
+        }
+
+        [TestMethod]
+        public void CharVar() {
+            CollectionAssert.AreEqual(
+                new[] {
+                    new Token { Type = TokenType.CharVar, Start = 0, Length = 2 },
+                    new Token { Type = TokenType.Number, Start = 2, Length = 1 },
+                }, new Lexer().Lex("_a0").ToList());
         }
 
         [TestMethod]
