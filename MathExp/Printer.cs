@@ -12,10 +12,10 @@ namespace MathExp
         string GetSeparator(string s, Token last, Token next) {
             var lastT = last.Type;
             var nextT = next.Type;
-            if (lastT == TokenType.CharVar || nextT == TokenType.CharVar) {
-                var other = lastT == TokenType.CharVar ? nextT : lastT;
+            if (lastT == TokenType.Char || nextT == TokenType.Char) {
+                var other = lastT == TokenType.Char ? nextT : lastT;
                 switch (other) {
-                    case TokenType.CharVar:
+                    case TokenType.Char:
                     case TokenType.Variable:
                     case TokenType.Number:
                         return "";
