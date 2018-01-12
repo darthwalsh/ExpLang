@@ -35,8 +35,8 @@ namespace MathExp
             (@"\G\s+", TokenType.Skipped),
             (@"\G\d+", TokenType.Number),
             (@"\G(\+|-|\*|/)", TokenType.Op),
-            (@"\G\$\w+", TokenType.Variable),
-            (@"\G_\w", TokenType.CharVar),
+            (@"\G[A-Z]", TokenType.Variable),
+            (@"\G[a-z]", TokenType.CharVar),
         }.Select(g => (new Regex(g.Item1, RegexOptions.Compiled), g.Item2)).ToList();
 
         public IEnumerable<Token> Lex(string s) {

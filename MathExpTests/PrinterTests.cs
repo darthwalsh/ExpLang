@@ -12,7 +12,7 @@ namespace MathExpTests
         public void Expression() {
             Verify("", "");
             Verify(" 12 ", "12");
-            Verify(" 12 + $a ", "12 + $a");
+            Verify(" 12 + A ", "12 + A");
         }
 
         [TestMethod]
@@ -23,14 +23,14 @@ namespace MathExpTests
 
         [TestMethod]
         public void Variable() {
-            Verify("$a0", "$a0");
-            Verify("$a0$a1", "$a0 $a1");
+            Verify("A", "A");
+            Verify("A0", "A 0");
         }
 
         [TestMethod]
         public void CharVar() {
-            Verify("_a0", "_a0");
-            Verify("1+_a0+2", "1 + _a0 + 2");
+            Verify("a0", "a0");
+            Verify("1+a0+2", "1 + a0 + 2");
         }
 
         static void Verify(string input, string pretty) {

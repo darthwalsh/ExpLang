@@ -14,15 +14,15 @@ namespace MathExpTests
                 new[] {
                     new Token { Type = TokenType.Number, Start = 1, Length = 2 },
                     new Token { Type = TokenType.Op, Start = 4, Length = 1 },
-                    new Token { Type = TokenType.Variable, Start = 6, Length = 2 },
-                }, new Lexer().Lex(" 12 + $a ").ToList());
+                    new Token { Type = TokenType.Variable, Start = 6, Length = 1 },
+                }, new Lexer().Lex(" 12 + A ").ToList());
 
             CollectionAssert.AreEqual(
                 new[] {
                     new Token { Type = TokenType.Number, Start = 0, Length = 2 },
                     new Token { Type = TokenType.Op, Start = 2, Length = 1 },
-                    new Token { Type = TokenType.Variable, Start = 3, Length = 2 },
-                }, new Lexer().Lex("12+$a").ToList());
+                    new Token { Type = TokenType.Variable, Start = 3, Length = 1 },
+                }, new Lexer().Lex("12+A").ToList());
         }
         [TestMethod]
         public void Ops() {
@@ -39,17 +39,18 @@ namespace MathExpTests
         public void Variable() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Variable, Start = 0, Length = 3 },
-                }, new Lexer().Lex("$a0").ToList());
+                    new Token { Type = TokenType.Variable, Start = 0, Length = 1 },
+                    new Token { Type = TokenType.Number, Start = 1, Length = 1 },
+                }, new Lexer().Lex("A0").ToList());
         }
 
         [TestMethod]
         public void CharVar() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.CharVar, Start = 0, Length = 2 },
-                    new Token { Type = TokenType.Number, Start = 2, Length = 1 },
-                }, new Lexer().Lex("_a0").ToList());
+                    new Token { Type = TokenType.CharVar, Start = 0, Length = 1 },
+                    new Token { Type = TokenType.Number, Start = 1, Length = 1 },
+                }, new Lexer().Lex("a0").ToList());
         }
 
         [TestMethod]
