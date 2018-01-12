@@ -12,7 +12,21 @@ namespace MathExpTests
         public void Expression() {
             Verify("", "");
             Verify(" 12 ", "12");
-            Verify(" 12 + A ", "12 + A");
+            Verify(" a + A ", "a + A");
+            Verify("((1+a)+3)", "((1 + a) + 3)");
+            Verify(@"ab + cd = ef
+| b + d = 1f
+| (a + c) + 1 = e
+
+Aa + Bb = Cc
+| a + b = c
+| A + B = C", @"ab + cd = ef
+| b + d = 1f
+| (a + c) + 1 = e
+
+Aa + Bb = Cc
+| a + b = c
+| A + B = C");
         }
 
         [TestMethod]

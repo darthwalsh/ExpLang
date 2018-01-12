@@ -23,6 +23,20 @@ namespace MathExpTests
                     new Token { Type = TokenType.Op, Start = 2, Length = 1 },
                     new Token { Type = TokenType.Variable, Start = 3, Length = 1 },
                 }, new Lexer().Lex("12+A").ToList());
+
+            CollectionAssert.AreEqual(
+                new[] {
+                    new Token { Type = TokenType.CharVar, Start = 0, Length = 1 },
+                    new Token { Type = TokenType.Equals, Start = 2, Length = 1 },
+                    new Token { Type = TokenType.CharVar, Start = 4, Length = 1 },
+                    new Token { Type = TokenType.Newline, Start = 5, Length = 2 },
+                    new Token { Type = TokenType.Where, Start = 7, Length = 1 },
+                    new Token { Type = TokenType.CharVar, Start = 9, Length = 1 },
+                    new Token { Type = TokenType.Newline, Start = 10, Length = 4 },
+                }, new Lexer().Lex(@"a = b
+| c
+
+").ToList());
         }
         [TestMethod]
         public void Ops() {

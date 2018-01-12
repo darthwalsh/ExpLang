@@ -9,22 +9,38 @@ namespace MathExp
 {
     public class Printer
     {
+        string GetSeparator(string s, Token last, Token next) {
+            var lastT = last.Type;
+            var nextT = next.Type;
+            if (lastT == TokenType.CharVar || nextT == TokenType.CharVar) {
+                var other = lastT == TokenType.CharVar ? nextT : lastT;
+                switch (other) {
+                    case TokenType.CharVar:
+                    case TokenType.Variable:
+                    case TokenType.Number:
+                        return "";
+                }
+            }
+            if (lastT == TokenType.Newline || nextT == TokenType.Newline) {
+                return "";
+            }
+            if (lastT == TokenType.Parens && s[last.Start] == '(') {
+                return "";
+            }
+            if (nextT == TokenType.Parens && s[next.Start] == ')') {
+                return "";
+            }
+            return " ";
+        }
+
         public string PrettyPrint(string s, IEnumerable<Token> tokens) {
             var builder = new StringBuilder();
 
-            var fence = "";
+            var last = new Token { Type = TokenType.Newline };
             foreach (var t in tokens) {
-                builder.Append(fence);
+                builder.Append(GetSeparator(s, last, t));
                 builder.Append(s, t.Start, t.Length);
-
-                switch (t.Type) {
-                    case TokenType.CharVar:
-                        fence = "";
-                        break;
-                    default:
-                        fence = " ";
-                        break;
-                }
+                last = t;
             }
 
             return builder.ToString();

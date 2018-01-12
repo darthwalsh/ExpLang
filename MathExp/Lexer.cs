@@ -14,8 +14,12 @@ namespace MathExp
 
         Number,
         Op,
+        Parens,
         Variable,
         CharVar,
+        Equals,
+        Newline,
+        Where,
     }
 
     public struct Token : IEquatable<Token>
@@ -32,11 +36,15 @@ namespace MathExp
     public class Lexer
     {
         static IEnumerable<(Regex regex, TokenType type)> grammar = new[] {
-            (@"\G\s+", TokenType.Skipped),
+            (@"\G +", TokenType.Skipped),
             (@"\G\d+", TokenType.Number),
             (@"\G(\+|-|\*|/)", TokenType.Op),
+            (@"\G[()]", TokenType.Parens),
             (@"\G[A-Z]", TokenType.Variable),
             (@"\G[a-z]", TokenType.CharVar),
+            (@"\G=", TokenType.Equals),
+            (@"\G[\r\n]\s*", TokenType.Newline),
+            (@"\G\|", TokenType.Where),
         }.Select(g => (new Regex(g.Item1, RegexOptions.Compiled), g.Item2)).ToList();
 
         public IEnumerable<Token> Lex(string s) {
