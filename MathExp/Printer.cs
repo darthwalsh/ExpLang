@@ -9,7 +9,7 @@ namespace MathExp
 {
     public class Printer
     {
-        string GetSeparator(string s, Token last, Token next) {
+        string GetSeparator(string s, RangeToken last, RangeToken next) {
             var lastT = last.Type;
             var nextT = next.Type;
             if (lastT == TokenType.Char || nextT == TokenType.Char) {
@@ -33,10 +33,10 @@ namespace MathExp
             return " ";
         }
 
-        public string PrettyPrint(string s, IEnumerable<Token> tokens) {
+        public string PrettyPrint(string s, IEnumerable<RangeToken> tokens) {
             var builder = new StringBuilder();
 
-            var last = new Token { Type = TokenType.Newline };
+            var last = new RangeToken { Type = TokenType.Newline };
             foreach (var t in tokens) {
                 builder.Append(GetSeparator(s, last, t));
                 builder.Append(s, t.Start, t.Length);

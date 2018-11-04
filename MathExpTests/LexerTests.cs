@@ -12,27 +12,27 @@ namespace MathExpTests
         public void Expression() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Number, Start = 1, Length = 2 },
-                    new Token { Type = TokenType.Op, Start = 4, Length = 1 },
-                    new Token { Type = TokenType.Variable, Start = 6, Length = 1 },
+                    new RangeToken { Type = TokenType.Number, Start = 1, Length = 2 },
+                    new RangeToken { Type = TokenType.Op, Start = 4, Length = 1 },
+                    new RangeToken { Type = TokenType.Variable, Start = 6, Length = 1 },
                 }, new Lexer().Lex(" 12 + A ").ToList());
 
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Number, Start = 0, Length = 2 },
-                    new Token { Type = TokenType.Op, Start = 2, Length = 1 },
-                    new Token { Type = TokenType.Variable, Start = 3, Length = 1 },
+                    new RangeToken { Type = TokenType.Number, Start = 0, Length = 2 },
+                    new RangeToken { Type = TokenType.Op, Start = 2, Length = 1 },
+                    new RangeToken { Type = TokenType.Variable, Start = 3, Length = 1 },
                 }, new Lexer().Lex("12+A").ToList());
 
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Char, Start = 0, Length = 1 },
-                    new Token { Type = TokenType.Equals, Start = 2, Length = 1 },
-                    new Token { Type = TokenType.Char, Start = 4, Length = 1 },
-                    new Token { Type = TokenType.Newline, Start = 5, Length = 2 },
-                    new Token { Type = TokenType.Where, Start = 7, Length = 1 },
-                    new Token { Type = TokenType.Char, Start = 9, Length = 1 },
-                    new Token { Type = TokenType.Newline, Start = 10, Length = 4 },
+                    new RangeToken { Type = TokenType.Char, Start = 0, Length = 1 },
+                    new RangeToken { Type = TokenType.Equals, Start = 2, Length = 1 },
+                    new RangeToken { Type = TokenType.Char, Start = 4, Length = 1 },
+                    new RangeToken { Type = TokenType.Newline, Start = 5, Length = 2 },
+                    new RangeToken { Type = TokenType.Where, Start = 7, Length = 1 },
+                    new RangeToken { Type = TokenType.Char, Start = 9, Length = 1 },
+                    new RangeToken { Type = TokenType.Newline, Start = 10, Length = 4 },
                 }, new Lexer().Lex(@"a = b
 | c
 
@@ -42,10 +42,10 @@ namespace MathExpTests
         public void Ops() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Op, Start = 0, Length = 1 },
-                    new Token { Type = TokenType.Op, Start = 1, Length = 1 },
-                    new Token { Type = TokenType.Op, Start = 2, Length = 1 },
-                    new Token { Type = TokenType.Op, Start = 3, Length = 1 },
+                    new RangeToken { Type = TokenType.Op, Start = 0, Length = 1 },
+                    new RangeToken { Type = TokenType.Op, Start = 1, Length = 1 },
+                    new RangeToken { Type = TokenType.Op, Start = 2, Length = 1 },
+                    new RangeToken { Type = TokenType.Op, Start = 3, Length = 1 },
                 }, new Lexer().Lex("+-*/").ToList());
         }
 
@@ -53,8 +53,8 @@ namespace MathExpTests
         public void Variable() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Variable, Start = 0, Length = 1 },
-                    new Token { Type = TokenType.Number, Start = 1, Length = 1 },
+                    new RangeToken { Type = TokenType.Variable, Start = 0, Length = 1 },
+                    new RangeToken { Type = TokenType.Number, Start = 1, Length = 1 },
                 }, new Lexer().Lex("A0").ToList());
         }
 
@@ -62,8 +62,8 @@ namespace MathExpTests
         public void CharVar() {
             CollectionAssert.AreEqual(
                 new[] {
-                    new Token { Type = TokenType.Char, Start = 0, Length = 1 },
-                    new Token { Type = TokenType.Number, Start = 1, Length = 1 },
+                    new RangeToken { Type = TokenType.Char, Start = 0, Length = 1 },
+                    new RangeToken { Type = TokenType.Number, Start = 1, Length = 1 },
                 }, new Lexer().Lex("a0").ToList());
         }
 
