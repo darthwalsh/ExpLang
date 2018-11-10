@@ -17,7 +17,7 @@ namespace MathExpTests
 
         [TestMethod]
         public void Sanity() {
-            var node = Parse("1");
+            var node = Parse("a=1");
             TestContext.WriteLine(node.Printed());
 
             node = Find(node, ExpConstants.DIGIT);
@@ -29,19 +29,29 @@ namespace MathExpTests
 
         [TestMethod]
         public void Cons() {
-            var cons = Parse("11");
+            var cons = Parse("a=11");
             Find(cons, ExpConstants.DIGIT);
 
-            cons = Find(Parse("1:111"), ExpConstants.CONS);
+            cons = Find(Parse("1:111=a"), ExpConstants.CONS);
             Find(cons.GetChildAt(2), ExpConstants.DIGIT);
         }
 
         [TestMethod]
         public void Add() {
-            var sum = Parse("1+1");
+            var sum = Parse("a=1+1");
             Assert.IsTrue(TryFind(sum, ExpConstants.DIGIT, out _));
 
-            Assert.ThrowsException<ParserLogException>(() => Parse("1+1+1"));
+            Assert.ThrowsException<ParserLogException>(() => Parse("a=1+1+1"));
+        }
+
+        [TestMethod]
+        public void Fact() {
+            Parse(@"a=1+1
+|b=2
+|2=3f
+
+
+c=3");
         }
 
         static Node Parse(string s) => new ExpParser(new StringReader(s)).Parse();

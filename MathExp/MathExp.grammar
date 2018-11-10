@@ -4,12 +4,21 @@ GRAMMARTYPE = "LL"
 
 %tokens%
 
+EQUALS = "="
 PLUS = "+"
+PIPE = "|"
 COLON = ":"
 DIGIT = <<[0-9]>>
 VARIABLE = <<[a-z]>>
+NEWLINE = <<\r?\n>>
 
 %productions%
+
+Facts = Equal [Wheres] [NEWLINE+ Facts] [NEWLINE];
+
+Wheres = NEWLINE PIPE Equal [Wheres];
+
+Equal = Add EQUALS Add;
 
 Add = Cons [PLUS Cons];
 
@@ -17,4 +26,4 @@ Cons = Char [COLON] Cons
 	| Char;
 
 Char = DIGIT
-     | VARIABLE ;
+     | VARIABLE;
