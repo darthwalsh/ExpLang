@@ -14,16 +14,17 @@ NEWLINE = <<\r?\n>>
 
 %productions%
 
-Facts = Equal [Wheres] [NEWLINE+ Facts] [NEWLINE];
+Facts = Equal [NEWLINE FactOrWhere] [NEWLINE];
 
-Wheres = NEWLINE PIPE Equal [Wheres];
+FactOrWhere = PIPE Equal [NEWLINE FactOrWhere]
+  | Equal [NEWLINE FactOrWhere];
 
 Equal = Add EQUALS Add;
 
 Add = Cons [PLUS Cons];
 
 Cons = Char [COLON] Cons
-	| Char;
+  | Char;
 
 Char = DIGIT
-     | VARIABLE;
+  | VARIABLE;
