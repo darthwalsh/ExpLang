@@ -8,17 +8,15 @@ namespace MathExpTests
 {
     [TestClass]
     public class ParserTests {
-        static TestContext TestContext;
+        static TestContext context;
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext) {
-            TestContext = testContext;
-        }
+        public static void ClassInitialize(TestContext testContext) => context = testContext;
 
         [TestMethod]
         public void Sanity() {
             var node = Parse("a=1");
-            TestContext.WriteLine(node.Printed());
+            context.WriteLine(node.Printed());
 
             node = Find(node, ExpConstants.DIGIT);
             var child = (Token)node;
@@ -39,22 +37,28 @@ namespace MathExpTests
         [TestMethod]
         public void Add() {
             var sum = Parse("a=1+1");
-            Assert.IsTrue(TryFind(sum, ExpConstants.DIGIT, out _));
+            Find(sum, ExpConstants.DIGIT);
 
             Assert.ThrowsException<ParserLogException>(() => Parse("a=1+1+1"));
         }
 
         [TestMethod]
         public void Fact() {
+            var facts = Parse(@"a=1+1
+                |b=2
+
+                c=3");
+            facts = Find(facts, ExpConstants.FACTS);
+            Find(facts.GetChildAt(1), ExpConstants.WHERES);
+
             Parse(@"a=1+1
-|b=2
-|2=3f
-
-
-c=3");
+                b=2
+                |2=3f
+                |2=3g
+                c=3");
         }
 
-        static Node Parse(string s) => new ExpParser(new StringReader(s)).Parse();
+        static Node Parse(string s) => new ExpParser(new StringReader(s.TrailingNewline())).Parse();
 
         static Node Find(Node n, ExpConstants id) {
             Assert.IsTrue(TryFind(n, id, out var found));
@@ -79,6 +83,9 @@ c=3");
 
 public static class Extensions
 {
+    public static string TrailingNewline(this string s) =>
+        s.EndsWith(Environment.NewLine) ? s : s + Environment.NewLine;
+
     public static string Printed(this Node node) {
         using (var writer = new StringWriter()) {
             node.PrintTo(writer);
