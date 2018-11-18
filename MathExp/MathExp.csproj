@@ -65,7 +65,17 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
+    <PropertyGroup>
+      <GrammaticaURL>https://github.com/cederberg/grammatica/releases/download/v1.6/grammatica-1.6.zip</GrammaticaURL>
+      <GrammaticaJar>$(TMP)\grammatica-1.6\lib\grammatica-1.6.jar</GrammaticaJar>
+      <DownloadNeeded>Exists('C:\')</DownloadNeeded>
+    </PropertyGroup>
+  
+    <!-- If needed, download and extract grammatica-1.6.jar. Ignore error from first build, due to https://github.com/Microsoft/msbuild/issues/3884 -->
+    <DownloadFile Condition="!Exists($(GrammaticaJar))" SourceUrl="$(GrammaticaURL)" DestinationFolder="$(TMP)" />
+    <Unzip Condition="!Exists($(GrammaticaJar))" SourceFiles="$(TMP)\grammatica-1.6.zip" DestinationFolder="$(TMP)" OverwriteReadOnlyFiles="true" />
+    
     <Exec Condition="!Exists('Generated\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('MathExp.grammar').Ticks) > $([System.IO.File]::GetLastWriteTime('Generated\ExpAnalyzer.cs').Ticks)"
-      Command="java -jar &quot;%TMP%\grammatica-1.6\lib\grammatica-1.6.jar&quot; MathExp.grammar --csoutput Generated --cspublic --csnamespace MathExp.Generated --csclassname Exp" />
+      Command="java -jar &quot;$(GrammaticaJar)&quot; MathExp.grammar --csoutput Generated --cspublic --csnamespace MathExp.Generated --csclassname Exp" />
   </Target>
 </Project>
