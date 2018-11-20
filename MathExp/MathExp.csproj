@@ -52,6 +52,7 @@
     <Compile Include="Generated\ExpConstants.cs" />
     <Compile Include="Generated\ExpParser.cs" />
     <Compile Include="Generated\ExpTokenizer.cs" />
+    <Compile Include="Calculator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

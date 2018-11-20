@@ -17,10 +17,11 @@ SPACE = " " %ignore%
 
 %productions%
 
-Facts = Equal {Wheres} Facts?;
+Facts = EqualOrExpr {Wheres} Facts?;
 
 Wheres = PIPE Equal;
 
+EqualOrExpr = Add [EQUALS Add] NEWLINE+;
 Equal = Add EQUALS Add NEWLINE+;
 
 Add = Cons [PLUS Cons];

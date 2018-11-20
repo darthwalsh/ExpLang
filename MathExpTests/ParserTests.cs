@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using MathExp;
 using MathExp.Generated;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PerCederberg.Grammatica.Runtime;
@@ -15,7 +15,7 @@ namespace MathExpTests
 
         [TestMethod]
         public void Sanity() {
-            var node = Parse("a=1");
+            var node = Parse("1");
             context.WriteLine(node.Printed());
 
             node = Find(node, ExpConstants.DIGIT);
@@ -27,7 +27,7 @@ namespace MathExpTests
 
         [TestMethod]
         public void Cons() {
-            var cons = Parse("a=11");
+            var cons = Parse("11");
             Find(cons, ExpConstants.DIGIT);
 
             cons = Find(Parse("1:111=a"), ExpConstants.CONS);
@@ -36,10 +36,10 @@ namespace MathExpTests
 
         [TestMethod]
         public void Add() {
-            var sum = Parse("a=1+1");
+            var sum = Parse("1+1");
             Find(sum, ExpConstants.DIGIT);
 
-            Assert.ThrowsException<ParserLogException>(() => Parse("a=1+1+1"));
+            Assert.ThrowsException<ParserLogException>(() => Parse("1+1+1"));
         }
 
         [TestMethod]
@@ -56,6 +56,11 @@ namespace MathExpTests
                 |2=3f
                 |2=3g
                 c=3");
+
+            Parse(@"a=1+1
+                b=2
+                1+1
+                2=1");
         }
 
         static Node Parse(string s) => new ExpParser(new StringReader(s.TrailingNewline())).Parse();
@@ -79,17 +84,14 @@ namespace MathExpTests
             return false;
         }
     }
-}
 
-public static class Extensions
-{
-    public static string TrailingNewline(this string s) =>
-        s.EndsWith(Environment.NewLine) ? s : s + Environment.NewLine;
-
-    public static string Printed(this Node node) {
-        using (var writer = new StringWriter()) {
-            node.PrintTo(writer);
-            return writer.ToString();
+    public static class Extensions
+    {
+        public static string Printed(this Node node) {
+            using (var writer = new StringWriter()) {
+                node.PrintTo(writer);
+                return writer.ToString();
+            }
         }
     }
 }
