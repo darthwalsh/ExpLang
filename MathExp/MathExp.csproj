@@ -67,7 +67,6 @@
     <PropertyGroup>
       <GrammaticaURL>https://github.com/cederberg/grammatica/releases/download/v1.6/grammatica-1.6.zip</GrammaticaURL>
       <GrammaticaJar>$(TMP)\grammatica-1.6\lib\grammatica-1.6.jar</GrammaticaJar>
-      <DownloadNeeded>Exists('C:\')</DownloadNeeded>
     </PropertyGroup>
     <!-- If needed, download and extract grammatica-1.6.jar. Ignore error from first build, due to https://github.com/Microsoft/msbuild/issues/3884 -->
     <DownloadFile Condition="!Exists($(GrammaticaJar))" SourceUrl="$(GrammaticaURL)" DestinationFolder="$(TMP)" />
