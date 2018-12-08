@@ -1,7 +1,7 @@
-﻿using MathExp;
+﻿using Engine;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace MathExpTests
+namespace EngineTests
 {
     [TestClass]
     public class CalculatorTests {

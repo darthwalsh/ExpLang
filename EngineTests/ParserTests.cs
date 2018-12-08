@@ -1,10 +1,10 @@
 ﻿using System.IO;
-using MathExp;
-using MathExp.Generated;
+using Engine;
+using Engine.Generated;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PerCederberg.Grammatica.Runtime;
 
-namespace MathExpTests
+namespace EngineTests
 {
     [TestClass]
     public class ParserTests {

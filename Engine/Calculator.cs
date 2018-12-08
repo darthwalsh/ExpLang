@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using MathExp.Generated;
+using Engine.Generated;
 using PerCederberg.Grammatica.Runtime;
 
-namespace MathExp
+namespace Engine
 {
     public class Calculator : ExpAnalyzer
     {

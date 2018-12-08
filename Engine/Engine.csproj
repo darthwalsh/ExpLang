@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{8897C0AF-8F9E-4423-8055-3D8DD48B77AE}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>MathExp</RootNamespace>
-    <AssemblyName>MathExp</AssemblyName>
+    <RootNamespace>Engine</RootNamespace>
+    <AssemblyName>Engine</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -58,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="MathExp.grammar" />
+    <None Include="ExpLang.grammar" />
     <None Include="packages.config" />
     <None Include="..\README.md" />
   </ItemGroup>
@@ -71,6 +71,6 @@
     <!-- If needed, download and extract grammatica-1.6.jar. Ignore error from first build, due to https://github.com/Microsoft/msbuild/issues/3884 -->
     <DownloadFile Condition="!Exists($(GrammaticaJar))" SourceUrl="$(GrammaticaURL)" DestinationFolder="$(TMP)" />
     <Unzip Condition="!Exists($(GrammaticaJar))" SourceFiles="$(TMP)\grammatica-1.6.zip" DestinationFolder="$(TMP)" OverwriteReadOnlyFiles="true" />
-    <Exec Condition="!Exists('Generated\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('MathExp.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('Generated\ExpAnalyzer.cs').Ticks)" Command="java -jar &quot;$(GrammaticaJar)&quot; MathExp.grammar --csoutput Generated --cspublic --csnamespace MathExp.Generated --csclassname Exp" />
+    <Exec Condition="!Exists('Generated\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('Engine.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('Generated\ExpAnalyzer.cs').Ticks)" Command="java -jar &quot;$(GrammaticaJar)&quot; ExpLang.grammar --csoutput Generated --cspublic --csnamespace Engine.Generated --csclassname Exp" />
   </Target>
 </Project>
