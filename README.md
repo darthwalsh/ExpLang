@@ -1,6 +1,10 @@
 # ExpLang = Explained Language
 
+[![Build status](https://darthwalsh.visualstudio.com/ExpLang/_apis/build/status/ExpLang-Azure%20Web%20App%20for%20ASP.NET-CI)](https://darthwalsh.visualstudio.com/ExpLang/_build/latest?definitionId=3)
+
 Simple math [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for defining arithmetic operations.
+
+Try it online: https://explang.azurewebsites.net/
 
 ## Running Locally
 
