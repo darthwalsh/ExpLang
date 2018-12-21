@@ -12,13 +12,20 @@ namespace Web.Controllers
     {
         // POST values
         [HttpPost]
-        public ActionResult<string> Post([FromBody] Input value)
+        public ActionResult<Output> Post([FromBody] Input value)
         {
-            return value.text + " / " + DateTime.Now.ToString();
+            return new Output {
+                result = value.text + " / " + DateTime.Now.ToString()
+            };
         }
 
         public class Input {
             public string text { get; set; }
+        }
+
+        public class Output
+        {
+            public string result { get; set; }
         }
     }
 }
