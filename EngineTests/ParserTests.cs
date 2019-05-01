@@ -31,7 +31,7 @@ namespace EngineTests
             Find(cons, ExpConstants.DIGIT);
 
             cons = Find(Parse("1:111=a"), ExpConstants.CONS);
-            Find(cons.GetChildAt(2), ExpConstants.DIGIT);
+            Find(cons[2], ExpConstants.DIGIT);
         }
 
         [TestMethod]
@@ -49,7 +49,7 @@ namespace EngineTests
 
                 c=3");
             facts = Find(facts, ExpConstants.FACTS);
-            Find(facts.GetChildAt(1), ExpConstants.WHERES);
+            Find(facts[1], ExpConstants.WHERES);
 
             Parse(@"a=1+1
                 b=2
@@ -71,12 +71,12 @@ namespace EngineTests
         }
 
         static bool TryFind(Node n, ExpConstants id, out Node found) {
-            if (n.Id == (int)id) {
+            if ((ExpConstants)n.Id == id) {
                 found = n;
                 return true;
             }
             for (var i = 0; i < n.GetChildCount(); ++i) {
-                if (TryFind(n.GetChildAt(i), id, out found)) {
+                if (TryFind(n[i], id, out found)) {
                     return true;
                 }
             }
