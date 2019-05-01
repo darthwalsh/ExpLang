@@ -13,13 +13,15 @@ window.onload = () => {
                   "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                  text: $("input").textContent,
+                  text: $("input").value,
               })
           });
           const result = await request.json();
           $("output").textContent = result.result;
+          $("output").style.color = result.error ? "red" : "black";
       } catch (ex) {
           $("output").textContent = `js error: ${ex}`;
+          $("output").style.color = "red";
       }
   };
 };

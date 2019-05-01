@@ -14,9 +14,12 @@ namespace Engine
         readonly List<Node> facts = new List<Node>();
         readonly List<string> lines;
 
-        private Calculator(string input) {
+        internal Calculator(string input) {
             lines = input.Split(new[] { Environment.NewLine }, StringSplitOptions.None).ToList();
         }
+
+        internal string Output => output.ToString();
+        internal bool Error { get; private set; }
 
         public override Node ExitEqualOrExpr(Production node) {
             var isExpression = (ExpConstants)node[1].Id == ExpConstants.NEWLINE;
@@ -61,16 +64,25 @@ namespace Engine
             // Grammatica lines and columns are indexed from 1, inclusive on ends
             var line = lines[node.GetStartLine() - 1];
             var text = line.Substring(node.GetStartColumn() - 1, node.GetEndColumn() + 1 - node.GetStartColumn());
+
+            Error = true;
             return $"Error! Can't evaluate '{text}'";
         }
+    }
 
-        public static string Evaluate(string input) {
+    public class Evalutation
+    {
+        public string Result { get; set; }
+        public bool Error { get; set; }
+
+        public Evalutation(string input) {
             var node = new ExpParser(new StringReader(input.TrailingNewline())).Parse();
 
             var calc = new Calculator(input);
             calc.Analyze(node);
 
-            return calc.output.ToString();
+            Result = calc.Output;
+            Error = calc.Error;
         }
     }
 

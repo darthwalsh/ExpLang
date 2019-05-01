@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Engine;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers
@@ -12,20 +10,30 @@ namespace Web.Controllers
     {
         // POST values
         [HttpPost]
-        public ActionResult<Output> Post([FromBody] Input value)
-        {
-            return new Output {
-                result = value.text + " / " + DateTime.Now.ToString()
-            };
+        public ActionResult<Output> Post([FromBody] Input value) {
+            try {
+                var eval = new Evalutation(value.text);
+                return new Output {
+                    result = eval.Result,
+                    error = eval.Error
+                };
+            } catch (Exception e) {
+                return new Output {
+                    result = e.ToString(),
+                    error = true
+                };
+            }
         }
 
-        public class Input {
+        public class Input
+        {
             public string text { get; set; }
         }
 
         public class Output
         {
             public string result { get; set; }
+            public bool error { get; set; }
         }
     }
 }
