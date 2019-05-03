@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Engine.Generated;
 using PerCederberg.Grammatica.Runtime;
 
@@ -15,8 +16,10 @@ namespace Engine
         readonly List<Node> expressions = new List<Node>();
         readonly List<string> lines;
 
+        static Regex lineSplit = new Regex(@"\r?\n", RegexOptions.Compiled);
+
         internal Calculator(string input) {
-            lines = input.Split(new[] { Environment.NewLine }, StringSplitOptions.None).ToList();
+            lines = lineSplit.Split(input).ToList();
         }
 
         internal string Output => output.ToString();

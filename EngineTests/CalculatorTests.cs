@@ -36,5 +36,6 @@ namespace EngineTests
         }
 
         // TODO test TryEvaluate("X") and "1X"
+        // TODO test with \n and with \r\n
     }
 }
