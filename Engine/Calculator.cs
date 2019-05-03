@@ -12,6 +12,7 @@ namespace Engine
     {
         readonly StringBuilder output = new StringBuilder();
         readonly List<Node> facts = new List<Node>();
+        readonly List<Node> expressions = new List<Node>();
         readonly List<string> lines;
 
         internal Calculator(string input) {
@@ -21,10 +22,13 @@ namespace Engine
         internal string Output => output.ToString();
         internal bool Error { get; private set; }
 
-        public override Node ExitEqualOrExpr(Production node) {
-            var isExpression = (ExpConstants)node[1].Id == ExpConstants.NEWLINE;
+        // Returns values backwards through line order, so instead of evaluating in place, collect for now
+        public override Node ExitFacts(Production node) {
+            var equalOrExpr = node[0];
+
+            var isExpression = (ExpConstants)equalOrExpr[1].Id == ExpConstants.NEWLINE;
             if (isExpression) {
-                output.AppendLine(GetValue(node[0]));
+                expressions.Add(equalOrExpr[0]);
             } else {
                 facts.Add(node);
             }
@@ -60,7 +64,7 @@ namespace Engine
 
         static bool TryGetLiteralDigits(Node node, out string digits) {
             if ((ExpConstants)node.Id == ExpConstants.ADD && node.TryGetSingleChild(ExpConstants.CONS, out var cons)) {
-                StringBuilder value = new StringBuilder();
+                var value = new StringBuilder();
                 while (true) {
                     if (cons.TryGetFirstChild(ExpConstants.CHAR, out var @char) &&
                         @char.TryGetSingleChild(ExpConstants.DIGIT, out var digit) &&
@@ -86,18 +90,30 @@ namespace Engine
         }
 
         bool TrySolve(Node node, Node fact, bool left, out string result) {
-            var pattern = fact[left ? 0 : 2];
+            var equals = fact[0];
+            var pattern = equals[left ? 0 : 2];
+
+            var wheres = new List<Node>();
+            for (int i = 1; i < fact.Count && (ExpConstants)fact[i].Id == ExpConstants.WHERES; ++i) {
+                wheres.Add(fact[i]);
+            }
 
             var matcher = new Matcher(pattern, node);
-            if (matcher.Matches) {
-                result = GetValue(fact[left ? 2 : 0]);
+            if (matcher.Matches && wheres.Count == 0) { // TODO don't fail on the where clause
+                result = GetValue(equals[left ? 2 : 0]);
                 return true;
             }
 
-            // TODO don't ignore the where clause
-
             result = default;
             return false;
+        }
+
+        public void Evaluate() {
+            facts.Reverse();
+            expressions.Reverse();
+            foreach (var exp in expressions) {
+                output.AppendLine(GetValue(exp));
+            }
         }
 
         class Matcher
@@ -140,6 +156,7 @@ namespace Engine
 
             var calc = new Calculator(input);
             calc.Analyze(node);
+            calc.Evaluate();
 
             Result = calc.Output;
             Error = calc.Error;
