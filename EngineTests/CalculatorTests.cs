@@ -27,7 +27,7 @@ namespace EngineTests
             Assert.AreEqual(@"5", Evaluate(@"2+2=5; 2+2"));
         }
 
-        static Regex splitLines = new Regex("; *", RegexOptions.Compiled);
+        static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static string Evaluate(string input) {
             input = splitLines.Replace(input, Environment.NewLine);
             var eval = new Evalutation(input);

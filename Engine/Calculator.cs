@@ -1,109 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using Engine.Generated;
-using PerCederberg.Grammatica.Runtime;
 
 namespace Engine
 {
-    public class Calculator : ExpAnalyzer
+    public class Calculator
     {
+        readonly List<Fact> facts = new List<Fact>();
+        readonly List<Expression> expressions = new List<Expression>();
         readonly StringBuilder output = new StringBuilder();
-        readonly List<Node> facts = new List<Node>();
-        readonly List<Node> expressions = new List<Node>();
-        readonly List<string> lines;
 
-        static Regex lineSplit = new Regex(@"\r?\n", RegexOptions.Compiled);
-
-        internal Calculator(string input) {
-            lines = lineSplit.Split(input).ToList();
+        internal Calculator(IEnumerable<Expression> expressions) {
+            foreach (var e in expressions) {
+                if (e.Id == ExpressionType.Fact) {
+                    facts.Add((Fact)e);
+                } else {
+                    this.expressions.Add(e);
+                }
+            }
         }
 
         internal string Output => output.ToString();
         internal bool Error { get; private set; }
 
-        // Returns values backwards through line order, so instead of evaluating in place, collect for now
-        public override Node ExitFacts(Production node) {
-            var equalOrExpr = node[0];
-
-            var isExpression = (ExpConstants)equalOrExpr[1].Id == ExpConstants.NEWLINE;
-            if (isExpression) {
-                expressions.Add(equalOrExpr[0]);
-            } else {
-                facts.Add(node);
-            }
-
-            return base.ExitEqualOrExpr(node);
-        }
-
-        string GetValue(Node node) {
-            if (node.GetStartLine() != node.GetEndLine()) {
-                throw new NotSupportedException("input ranges multiple lines");
-            }
-
-            if (TryGetLiteralDigits(node, out var digits)) {
-                return digits;
+        string GetValue(Expression e) {
+            var digits = new StringBuilder();
+            if (TryGetLiteralDigits(e, digits)) {
+                return digits.ToString();
             }
 
             foreach (var fact in facts) {
-                if (TrySolve(node, fact, true, out var result)) {
+                if (TrySolve(e, fact, true, out var result)) {
                     return result;
                 }
-                if (TrySolve(node, fact, false, out result)) {
+                if (TrySolve(e, fact, false, out result)) {
                     return result;
                 }
             }
-
-            // Grammatica lines and columns are indexed from 1, inclusive on ends
-            var line = lines[node.GetStartLine() - 1];
-            var text = line.Substring(node.GetStartColumn() - 1, node.GetEndColumn() + 1 - node.GetStartColumn());
 
             Error = true;
-            return $"Error! Can't evaluate '{text}'";
+            return $"Error! Can't evaluate '{e}'";
         }
 
-        static bool TryGetLiteralDigits(Node node, out string digits) {
-            if ((ExpConstants)node.Id == ExpConstants.ADD && node.TryGetSingleChild(ExpConstants.CONS, out var cons)) {
-                var value = new StringBuilder();
-                while (true) {
-                    if (cons.TryGetFirstChild(ExpConstants.CHAR, out var @char) &&
-                        @char.TryGetSingleChild(ExpConstants.DIGIT, out var digit) &&
-                        digit is Token token) {
-                        value.Append(token.Image);
-                    } else {
-                        value = null;
-                    }
-
-                    if (value == null || cons.GetChildCount() == 1) {
-                        break;
-                    }
-                    cons = cons[1];
-                }
-
-                if (value != null) {
-                    digits = value.ToString();
-                    return true;
-                }
+        static bool TryGetLiteralDigits(Expression e, StringBuilder digits) {
+            if (e is Character c && c.Id == ExpressionType.Digit) {
+                digits.Append(c.Value);
+                return true;
             }
-            digits = default;
+
+            if (e is Func cons && cons.Name == ":") {
+                return TryGetLiteralDigits(e.Children.First(), digits) && TryGetLiteralDigits(e.Children.Skip(1).Single(), digits);
+            }
+
             return false;
         }
 
-        bool TrySolve(Node node, Node fact, bool left, out string result) {
-            var equals = fact[0];
-            var pattern = equals[left ? 0 : 2];
+        bool TrySolve(Expression e, Fact fact, bool left, out string result) {
+            var pattern = fact.Equality.Children.Skip(left ? 0 : 1).First();
 
-            var wheres = new List<Node>();
-            for (int i = 1; i < fact.Count && (ExpConstants)fact[i].Id == ExpConstants.WHERES; ++i) {
-                wheres.Add(fact[i]);
-            }
+            var wheres = fact.Children.Skip(1).ToList();
 
-            var matcher = new Matcher(pattern, node);
+            var matcher = new Matcher(pattern, e);
             if (matcher.Matches && wheres.Count == 0) { // TODO don't fail on the where clause
-                result = GetValue(equals[left ? 2 : 0]);
+                result = GetValue(fact.Equality.Children.Skip(left ? 1 : 0).First());
                 return true;
             }
 
@@ -112,37 +72,37 @@ namespace Engine
         }
 
         public void Evaluate() {
-            facts.Reverse();
-            expressions.Reverse();
-            foreach (var exp in expressions) {
-                output.AppendLine(GetValue(exp));
+            foreach (var e in expressions) {
+                output.AppendLine(GetValue(e));
             }
         }
 
         class Matcher
         {
-            public Matcher(Node x, Node y) {
+            public Matcher(Expression x, Expression y) {
                 Solve(x, y);
             }
 
             public bool Matches { get; private set; } = true;
 
-            void Solve(Node x, Node y) {
-                if (x.Count != y.Count || x.Id != y.Id) {
+            void Solve(Expression x, Expression y) {
+                if (x.Children.Count() != y.Children.Count() || x.Id != y.Id) {
                     Matches = false;
                     return;
                 }
-                for (var i = 0; i < x.Count; ++i) {
-                    Solve(x[i], y[i]);
+
+                foreach (var (xx, yy) in x.Children.Zip(y.Children, (xx, yy) => (xx, yy))) {
+                    Solve(xx, yy);
                 }
-                switch ((ExpConstants)x.Id) {
-                    case ExpConstants.DIGIT:
-                        if (((Token)x).Image != ((Token)y).Image) {
+
+                switch (x.Id) {
+                    case ExpressionType.Digit:
+                        if (((Character)x).Value != ((Character)y).Value) {
                             Matches = false;
                             return;
                         }
                         break;
-                    case ExpConstants.VARIABLE:
+                    case ExpressionType.Variable:
                         throw new NotSupportedException("Variable"); //TODO variable matching with dictionary
                 }
             }
@@ -155,10 +115,9 @@ namespace Engine
         public bool Error { get; set; }
 
         public Evalutation(string input) {
-            var node = new ExpParser(new StringReader(input.TrailingNewline())).Parse();
+            var expression = ExprExtractor.GetExpression(input);
 
-            var calc = new Calculator(input);
-            calc.Analyze(node);
+            var calc = new Calculator(expression);
             calc.Evaluate();
 
             Result = calc.Output;
@@ -168,18 +127,6 @@ namespace Engine
 
     public static class Extensions
     {
-        public static bool TryGetFirstChild(this Node node, ExpConstants id, out Node child) {
-            if (node.GetChildCount() >= 1 && (ExpConstants)node[0].Id == id) {
-                child = node[0];
-                return true;
-            }
-            child = default;
-            return false;
-        }
-
-        public static bool TryGetSingleChild(this Node node, ExpConstants id, out Node child) => 
-            node.TryGetFirstChild(id, out child) && node.GetChildCount() == 1;
-
         public static string TrailingNewline(this string s) =>
             s.EndsWith(Environment.NewLine) ? s : s + Environment.NewLine;
     }

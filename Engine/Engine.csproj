@@ -48,6 +48,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Expression.cs" />
+    <Compile Include="ExprExtractor.cs" />
     <Compile Include="Generated\ExpAnalyzer.cs" />
     <Compile Include="Generated\ExpConstants.cs" />
     <Compile Include="Generated\ExpParser.cs" />
