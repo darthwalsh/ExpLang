@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Environment = System.Collections.Generic.Dictionary<char, Engine.Character>;
 
 namespace Engine
 {
@@ -24,17 +25,17 @@ namespace Engine
         internal string Output => output.ToString();
         internal bool Error { get; private set; }
 
-        string GetValue(Expression e) {
+        string GetValue(Expression e, Environment env) {
             var digits = new StringBuilder();
-            if (TryGetLiteralDigits(e, digits)) {
+            if (TryGetLiteralDigits(e, env, digits)) {
                 return digits.ToString();
             }
 
             foreach (var fact in facts) {
-                if (TrySolve(e, fact, true, out var result)) {
+                if (TrySolve(e, fact, true, env, out var result)) {
                     return result;
                 }
-                if (TrySolve(e, fact, false, out result)) {
+                if (TrySolve(e, fact, false, env, out result)) {
                     return result;
                 }
             }
@@ -43,27 +44,30 @@ namespace Engine
             return $"Error! Can't evaluate '{e}'";
         }
 
-        static bool TryGetLiteralDigits(Expression e, StringBuilder digits) {
-            if (e is Character c && c.Id == ExpressionType.Digit) {
-                digits.Append(c.Value);
-                return true;
+        static bool TryGetLiteralDigits(Expression e, Environment env, StringBuilder digits) {
+            if (e is Character c) {
+                if (c.Id == ExpressionType.Digit) {
+                    digits.Append(c.Value);
+                    return true; 
+                } else if (c.Id == ExpressionType.Variable && env.TryGetValue(c.Value, out var value)) {
+                    digits.Append(value.Value);
+                    return true;
+                }
             }
 
             if (e is Func cons && cons.Name == ":") {
-                return TryGetLiteralDigits(e.Children.First(), digits) && TryGetLiteralDigits(e.Children.Skip(1).Single(), digits);
+                return TryGetLiteralDigits(cons.Left, env, digits) && 
+                    TryGetLiteralDigits(cons.Right, env, digits);
             }
 
             return false;
         }
 
-        bool TrySolve(Expression e, Fact fact, bool left, out string result) {
-            var pattern = fact.Equality.Children.Skip(left ? 0 : 1).First();
-
-            var wheres = fact.Children.Skip(1).ToList();
-
-            var matcher = new Matcher(pattern, e);
-            if (matcher.Matches && wheres.Count == 0) { // TODO don't fail on the where clause
-                result = GetValue(fact.Equality.Children.Skip(left ? 1 : 0).First());
+        bool TrySolve(Expression e, Fact fact, bool left, Environment env, out string result) {
+            var pattern = left ? fact.Equality.Left : fact.Equality.Right;
+            var matcher = new Matcher(pattern, e, fact.Wheres, env);
+            if (matcher.Matches) {
+                result = GetValue(left ? fact.Equality.Right : fact.Equality.Left, matcher.Env);
                 return true;
             }
 
@@ -73,19 +77,35 @@ namespace Engine
 
         public void Evaluate() {
             foreach (var e in expressions) {
-                output.AppendLine(GetValue(e));
+                output.AppendLine(GetValue(e, new Environment()));
             }
         }
 
         class Matcher
         {
-            public Matcher(Expression x, Expression y) {
+            public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Environment env) {
+                Env = new Environment(env);
                 Solve(x, y);
+                foreach (Func where in wheres) {
+                    Solve(where.Left, where.Right); // TODO iterate through in order of unknowns
+                }
             }
 
             public bool Matches { get; private set; } = true;
+            public Environment Env { get; private set; }
 
             void Solve(Expression x, Expression y) {
+                if (x is Character xc && y is Character yc) {
+                    if (x.Id == ExpressionType.Variable && y.Id == ExpressionType.Digit) {
+                        Env[xc.Value] = yc;
+                        return;
+                    }
+                    if (x.Id == ExpressionType.Digit && y.Id == ExpressionType.Variable) {
+                        Env[yc.Value] = xc;
+                        return;
+                    }
+                }
+
                 if (x.Children.Count() != y.Children.Count() || x.Id != y.Id) {
                     Matches = false;
                     return;
@@ -128,6 +148,6 @@ namespace Engine
     public static class Extensions
     {
         public static string TrailingNewline(this string s) =>
-            s.EndsWith(Environment.NewLine) ? s : s + Environment.NewLine;
+            s.EndsWith(System.Environment.NewLine) ? s : s + System.Environment.NewLine;
     }
 }

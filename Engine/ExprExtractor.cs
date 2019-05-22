@@ -19,11 +19,11 @@ namespace Engine
             if (isExpression) {
                 expressions.Add((Expression)node[0].Values[0]);
             } else {
-                var wheres = new List<Expression>();
+                var wheres = new List<Func>();
                 for (var i = 1; i < node.Count && (ExpConstants)node[i].Id == ExpConstants.WHERES; ++i) {
-                    wheres.Add((Expression)node[i].Values[0]);
+                    wheres.Add((Func)node[i].Values[0]);
                 }
-                expressions.Add(new Fact((Expression)node[0].Values[0], wheres));
+                expressions.Add(new Fact((Func)node[0].Values[0], wheres));
             }
 
             return node;

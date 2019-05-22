@@ -12,7 +12,7 @@ async function run() {
               "Content-Type": "application/json"
           },
           body: JSON.stringify({
-              text: $("input").value,
+              text: $("input").value
           })
       });
       const result = await request.json();
@@ -31,7 +31,7 @@ window.onload = () => {
   $("input").addEventListener("input", () =>
     localStorage.setItem("in", $("input").value));
   $("input").addEventListener("keydown", e => {
-    if ((e.ctrlKey || e.metaKey) && (e.keyCode == 13 || e.keyCode == 10)) {
+    if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
       run();
     }
   });

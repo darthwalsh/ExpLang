@@ -27,6 +27,11 @@ namespace EngineTests
             Assert.AreEqual(@"5", Evaluate(@"2+2=5; 2+2"));
         }
 
+        [TestMethod]
+        public void SimpleVariable() {
+            Assert.AreEqual(@"3", Evaluate(@"1+1=a; |a=3; 1+1"));
+        }
+
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static string Evaluate(string input) {
             input = splitLines.Replace(input, Environment.NewLine);

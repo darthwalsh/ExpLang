@@ -28,17 +28,17 @@ namespace Engine
 
     public class Fact : Expression
     {
-        readonly IEnumerable<Expression> wheres;
-
-        public Fact(Expression equality, IEnumerable<Expression> wheres)
+        public Fact(Func equality, IEnumerable<Func> wheres)
             : base(ExpressionType.Fact) {
             Equality = equality;
-            this.wheres = wheres;
+            this.Wheres = wheres;
         }
 
-        public Expression Equality { get; private set; }
+        public IEnumerable<Func> Wheres { get; private set; }
 
-        public override IEnumerable<Expression> Children => new[] { Equality }.Concat(wheres);
+        public Func Equality { get; private set; }
+
+        public override IEnumerable<Expression> Children => new[] { Equality }.Concat(Wheres);
 
         public override string ToString() => string.Join(Environment.NewLine + "| ", Children);
     }
@@ -55,6 +55,12 @@ namespace Engine
 
         public string Name { get; private set; }
         public override IEnumerable<Expression> Children => args;
+
+        public Expression Arg0 => args[0];
+        public Expression Arg1 => args[1];
+        public Expression Arg2 => args[2];
+        public Expression Left => Arg0;
+        public Expression Right => Arg1;
 
         public override string ToString() {
             switch (Name) {
