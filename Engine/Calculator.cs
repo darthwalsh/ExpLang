@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Environment = System.Collections.Generic.Dictionary<char, Engine.Character>;
+using Environment = System.Collections.Generic.Dictionary<char, string>;
 
 namespace Engine
 {
@@ -26,9 +26,8 @@ namespace Engine
         internal bool Error { get; private set; }
 
         string GetValue(Expression e, Environment env) {
-            var digits = new StringBuilder();
-            if (TryGetLiteralDigits(e, env, digits)) {
-                return digits.ToString();
+            if (TryGetLiteralDigits(e, env, out var digits)) {
+                return digits;
             }
 
             foreach (var fact in facts) {
@@ -44,13 +43,23 @@ namespace Engine
             return $"Error! Can't evaluate '{e}'";
         }
 
+        static bool TryGetLiteralDigits(Expression e, Environment env, out string digits) {
+            var builder = new StringBuilder();
+            if (TryGetLiteralDigits(e, env, builder)) {
+                digits = builder.ToString();
+                return true;
+            }
+            digits = default;
+            return false;
+        }
+
         static bool TryGetLiteralDigits(Expression e, Environment env, StringBuilder digits) {
             if (e is Character c) {
                 if (c.Id == ExpressionType.Digit) {
                     digits.Append(c.Value);
                     return true; 
                 } else if (c.Id == ExpressionType.Variable && env.TryGetValue(c.Value, out var value)) {
-                    digits.Append(value.Value);
+                    digits.Append(value);
                     return true;
                 }
             }
@@ -86,8 +95,28 @@ namespace Engine
             public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Environment env) {
                 Env = new Environment(env);
                 Solve(x, y);
-                foreach (Func where in wheres) {
-                    Solve(where.Left, where.Right); // TODO iterate through in order of unknowns
+
+                var toResolve = wheres.ToList();
+
+                while (toResolve.Any()) {
+                    var min = int.MaxValue;
+                    var minI = -1;
+                    for (var i = 0; i < toResolve.Count; ++i) {
+                        var unknowns = Unknowns(toResolve[i]);
+                        if (unknowns < min) {
+                            min = unknowns;
+                            minI = i;
+                        }
+                    }
+
+                    if (min > 1) {
+                        Matches = false;
+                        return;
+                    }
+
+                    var where = toResolve[minI];
+                    toResolve.RemoveAt(minI);
+                    Solve(where.Left, where.Right);
                 }
             }
 
@@ -96,12 +125,12 @@ namespace Engine
 
             void Solve(Expression x, Expression y) {
                 if (x is Character xc && y is Character yc) {
-                    if (x.Id == ExpressionType.Variable && y.Id == ExpressionType.Digit) {
-                        Env[xc.Value] = yc;
+                    if (x.Id == ExpressionType.Variable && TryGetLiteralDigits(y, Env, out var digits) && digits.Length == 1) {
+                        Env[xc.Value] = digits;
                         return;
                     }
-                    if (x.Id == ExpressionType.Digit && y.Id == ExpressionType.Variable) {
-                        Env[yc.Value] = xc;
+                    if (y.Id == ExpressionType.Variable && TryGetLiteralDigits(x, Env, out digits) && digits.Length == 1) {
+                        Env[yc.Value] = digits;
                         return;
                     }
                 }
@@ -123,8 +152,14 @@ namespace Engine
                         }
                         break;
                     case ExpressionType.Variable:
-                        throw new NotSupportedException("Variable"); //TODO variable matching with dictionary
+                        Matches = false;
+                        return;
                 }
+            }
+
+            int Unknowns(Expression e) {
+                var current = e.Id == ExpressionType.Variable && !Env.ContainsKey(((Character)e).Value);
+                return (current ? 1 : 0) + e.Children.Sum(Unknowns);
             }
         }
     }

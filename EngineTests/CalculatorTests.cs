@@ -32,13 +32,25 @@ namespace EngineTests
             Assert.AreEqual(@"3", Evaluate(@"1+1=a; |a=3; 1+1"));
         }
 
+        [TestMethod]
+        public void MultiVariable() {
+            Assert.AreEqual(@"3", Evaluate(@"1+1=a; |a=b; |b=3; 1+1"));
+            Assert.AreEqual(@"3", Evaluate(@"1+1=a; |b=3; |a=b; 1+1"));
+        }
+
+        [TestMethod]
+        public void LowerVariableMatchesSingle() {
+            Assert.IsTrue(GetEvaluation(@"1+1=a; |a=33; 1+1").Error);
+        }
+
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static string Evaluate(string input) {
-            input = splitLines.Replace(input, Environment.NewLine);
-            var eval = new Evalutation(input);
+            var eval = GetEvaluation(input);
             Assert.IsFalse(eval.Error);
             return eval.Result.Trim();
         }
+
+        static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine));
 
         // TODO test TryEvaluate("X") and "1X"
         // TODO test with \n and with \r\n
