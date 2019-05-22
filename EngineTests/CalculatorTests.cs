@@ -33,6 +33,11 @@ namespace EngineTests
         }
 
         [TestMethod]
+        public void UnknownVariable() {
+            Assert.IsTrue(GetEvaluation(@"1x").Error);
+        }
+
+        [TestMethod]
         public void MultiVariable() {
             Assert.AreEqual(@"3", Evaluate(@"1+1=a; |a=b; |b=3; 1+1"));
             Assert.AreEqual(@"3", Evaluate(@"1+1=a; |b=3; |a=b; 1+1"));
@@ -51,8 +56,5 @@ namespace EngineTests
         }
 
         static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine));
-
-        // TODO test TryEvaluate("X") and "1X"
-        // TODO test with \n and with \r\n
     }
 }
