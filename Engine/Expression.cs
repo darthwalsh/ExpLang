@@ -7,10 +7,10 @@ namespace Engine
 {
     public enum ExpressionType
     {
-        Digit,
-        Variable,
         Fact,
         Func,
+        Digit,
+        Variable,
     }
 
     public abstract class Expression
@@ -31,7 +31,7 @@ namespace Engine
         public Fact(Func equality, IEnumerable<Func> wheres)
             : base(ExpressionType.Fact) {
             Equality = equality;
-            this.Wheres = wheres;
+            Wheres = wheres;
         }
 
         public IEnumerable<Func> Wheres { get; private set; }
@@ -90,5 +90,23 @@ namespace Engine
         public char Value { get; private set; }
 
         public override string ToString() => Value.ToString();
+    }
+
+    public abstract class ExpressionVisitor
+    {
+        public Expression Visit(Expression e) {
+            switch (e.Id) {
+                case ExpressionType.Fact: return Visit((Fact)e);
+                case ExpressionType.Func: return Visit((Func)e);
+                case ExpressionType.Digit: return VisitDigit((Character)e);
+                case ExpressionType.Variable: return VisitVariable((Character)e);
+                default: throw new NotSupportedException(Enum.GetName(typeof(ExpressionType), e.Id));
+            }
+        }
+
+        protected virtual Fact Visit(Fact e) => new Fact(Visit(e.Equality), e.Wheres.Select(Visit));
+        protected virtual Func Visit(Func e) => new Func(e.Name, e.Children.Select(Visit).ToArray());
+        protected virtual Character VisitDigit(Character e) => e;
+        protected virtual Character VisitVariable(Character e) => e;
     }
 }

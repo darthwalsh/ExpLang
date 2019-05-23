@@ -7,6 +7,7 @@ namespace EngineTests
 {
     [TestClass]
     public class CalculatorTests {
+#pragma warning disable IDE0022 // Use expression body for methods
         static TestContext context;
 
         [ClassInitialize]
@@ -15,9 +16,14 @@ namespace EngineTests
         [TestMethod]
         public void Number() {
             Assert.AreEqual("1", Evaluate("1"));
-            Assert.AreEqual("123", Evaluate("123"));
             Assert.AreEqual(@"1
 3", Evaluate(@"1; 3"));
+        }
+
+        [Ignore] // TODO implement proper variable, not varchar
+        [TestMethod]
+        public void MultiDigit() {
+            Assert.AreEqual("123", Evaluate("123"));
         }
 
         [TestMethod]
@@ -53,6 +59,24 @@ namespace EngineTests
             Assert.IsTrue(GetEvaluation(@"1+1=a; |a=1; |a=2; 1+1").Error);
             Assert.AreEqual(@"3", Evaluate(@"1+1=a; |b=3; |a=b; |a=3; 1+1"));
         }
+
+        [TestMethod]
+        public void BackwardsLookup() {
+            Assert.AreEqual(@"1", Evaluate(@"1+1=2; 8+8=a; |1+a=2; 8+8"));
+            Assert.AreEqual(@"5", Evaluate(@"1 + 1 = 2
+2 + 1 = 3
+3 + 1 = 4
+4 + 1 = 5
+
+a + b = c
+| a + 1 = x
+| y + 1 = b
+| x + y = c
+
+2+3"));
+        }
+
+#pragma warning restore IDE0022 // Use expression body for methods
 
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static string Evaluate(string input) {

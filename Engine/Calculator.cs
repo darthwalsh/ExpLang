@@ -11,6 +11,10 @@ namespace Engine
         readonly List<Fact> facts = new List<Fact>();
         readonly List<Expression> expressions = new List<Expression>();
         readonly StringBuilder output = new StringBuilder();
+        readonly UniqVariable uniq = new UniqVariable();
+
+        const int max_recursion = 10;
+        int matcherRecursiveCalls;
 
         internal Calculator(IEnumerable<Expression> expressions) {
             foreach (var e in expressions) {
@@ -24,24 +28,6 @@ namespace Engine
 
         internal string Output => output.ToString();
         internal bool Error { get; private set; }
-
-        string GetValue(Expression e, Environment env) {
-            if (TryGetLiteralDigits(e, env, out var digits)) {
-                return digits;
-            }
-
-            foreach (var fact in facts) {
-                if (TrySolve(e, fact, true, env, out var result)) {
-                    return result;
-                }
-                if (TrySolve(e, fact, false, env, out result)) {
-                    return result;
-                }
-            }
-
-            Error = true;
-            return $"Error! Can't evaluate '{e}'";
-        }
 
         static bool TryGetLiteralDigits(Expression e, Environment env, out string digits) {
             var builder = new StringBuilder();
@@ -72,56 +58,156 @@ namespace Engine
             return false;
         }
 
-        bool TrySolve(Expression e, Fact fact, bool left, Environment env, out string result) {
-            var pattern = left ? fact.Equality.Left : fact.Equality.Right;
-            var matcher = new Matcher(pattern, e, fact.Wheres, env);
+        public void Evaluate() {
+            foreach (var e in expressions) {
+                // e = X, solve for X
+                var next = uniq.Next;
+                var temp = new Func("=", e, new Character(next, ExpressionType.Variable));
+                if ((MatchesSelf(temp, out var env) || TryResolveFact(temp, out env)) && env.TryGetValue(next, out var value)) {
+                    output.AppendLine(value);
+                } else {
+                    Error = true;
+                    output.AppendLine($"Error! Can't evaluate '{e}'");
+                }
+            }
+        }
+
+        bool MatchesSelf(Func test, out Environment env) {
+            var matcher = new Matcher(test.Left, test.Right, new Func[] { }, this); // TODO don't need wheres?
             if (matcher.Matches) {
-                result = GetValue(left ? fact.Equality.Right : fact.Equality.Left, matcher.Env);
+                env = matcher.Env;
                 return true;
             }
-
-            result = default;
+            env = default;
             return false;
         }
 
-        public void Evaluate() {
-            foreach (var e in expressions) {
-                output.AppendLine(GetValue(e, new Environment()));
+        bool TryResolveFact(Func test, out Environment env) =>
+            // Equality is implicitly reflexive, even though other ops aren't
+            TryResolveFactImpl(test, out env) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env);
+
+        bool TryResolveFactImpl(Func test, out Environment env) {
+            foreach (var fact in facts) {
+                var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
+                if (matcher.Matches) {
+                    env = matcher.Env;
+                    return true;
+                }
+            }
+            env = default;
+            return false;
+        }
+
+        // TODO test for rewrite needed?
+        Expression RewriteVariables(Expression e, out Dictionary<char, Character> backMap) {
+            var rewriter = new VariableRewriter {
+                Uniq = uniq
+            };
+            var expression = rewriter.Visit(e);
+            backMap = rewriter.Rewrites.ToDictionary(kvp => kvp.Value, kvp => new Character(kvp.Key, ExpressionType.Variable));
+            return expression;
+        }
+
+        // TODO test for inline needed?
+        class VariableInliner : ExpressionVisitor
+        {
+            public Environment Env { get; set; }
+
+            protected override Character VisitVariable(Character e) =>
+                Env.TryGetValue(e.Value, out var value) ? new Character(value.Single(), ExpressionType.Digit) : e;
+        }
+
+        class VariableRewriter : ExpressionVisitor
+        {
+            public UniqVariable Uniq { get; set; }
+
+            public Dictionary<char, char> Rewrites { get; private set; } = new Dictionary<char, char>();
+
+            protected override Character VisitVariable(Character e) {
+                if (!Rewrites.TryGetValue(e.Value, out var rewrite)) {
+                    rewrite = Uniq.Next;
+                    Rewrites.Add(e.Value, rewrite);
+                }
+                return new Character(rewrite, ExpressionType.Variable);
             }
         }
 
         class Matcher
         {
-            public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Environment env) {
-                Env = new Environment(env);
-                Solve(x, y);
+            readonly Calculator calc;
+            bool? matches = true; // null for possibly, depending on vars
 
-                var toResolve = wheres.ToList();
+            public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Calculator calc) {
+                if (calc.matcherRecursiveCalls++ > max_recursion) {
+                    throw new StackOverflowException("Recursion too deep"); // doesn't actually crash the .NET VM
+                }
 
-                while (toResolve.Any()) {
-                    var min = int.MaxValue;
-                    var minI = -1;
-                    for (var i = 0; i < toResolve.Count; ++i) {
-                        var unknowns = Unknowns(toResolve[i]);
-                        if (unknowns < min) {
-                            min = unknowns;
-                            minI = i;
-                        }
-                    }
+                try {
+                    this.calc = calc;
 
-                    if (min > 1) {
-                        Matches = false;
+                    // Do a pretest to try to assign as many variables as possible first, then check Solve() again later
+                    // This nicely prevents some recurive StackOverflow, but it might still be easy to trip it when
+                    // Matcher recursively calls TryResolveFact which calls Matcher...
+                    // TODO the solution is probably some sort of cache that lets you mark an evaluation as in-progress
+                    Solve(x, y);
+                    if (matches.HasValue && !matches.Value) {
                         return;
                     }
+                    matches = true;
 
-                    var where = toResolve[minI];
-                    toResolve.RemoveAt(minI);
-                    Solve(where.Left, where.Right);
+                    var toResolve = wheres.ToList();
+
+                    while (toResolve.Any()) {
+                        HandleWhere(toResolve);
+                    }
+
+                    Solve(x, y);
+                } finally {
+                    calc.matcherRecursiveCalls--;
                 }
             }
 
-            public bool Matches { get; private set; } = true;
-            public Environment Env { get; private set; }
+            public Environment Env { get; private set; } = new Environment();
+            public bool Matches => matches.HasValue && matches.Value;
+
+            void HandleWhere(List<Func> toResolve) {
+                var min = int.MaxValue;
+                var minI = -1;
+                for (var i = 0; i < toResolve.Count; ++i) {
+                    var unknowns = Unknowns(toResolve[i]);
+                    if (unknowns < min) {
+                        min = unknowns;
+                        minI = i;
+                    }
+                }
+
+                if (min > 1) {
+                    if (matches != false) {
+                        matches = null;
+                    }
+                    return;
+                }
+
+                var where = toResolve[minI];
+                toResolve.RemoveAt(minI);
+
+                var inlined = new VariableInliner {
+                    Env = Env
+                }.Visit(where);
+                var replaced = calc.RewriteVariables(inlined, out var backMap);
+                if (calc.TryResolveFact((Func)replaced, out var resolvedEnv)) {
+                    foreach (var kvp in resolvedEnv) {
+                        // Only try to set variable we've introduce into the fact
+                        // TODO add some tests around this
+                        if (backMap.TryGetValue(kvp.Key, out var actualVar)) {
+                            SetOrAdd(actualVar.Value, kvp.Value);
+                        }
+                    }
+                    return;
+                }
+
+                Solve(where.Left, where.Right);
+            }
 
             void Solve(Expression x, Expression y) {
                 if (x is Character xc && y is Character yc) {
@@ -130,13 +216,18 @@ namespace Engine
                         return;
                     }
                     if (y.Id == ExpressionType.Variable && TryGetLiteralDigits(x, Env, out digits) && digits.Length == 1) {
-                        Env[yc.Value] = digits;
+                        SetOrAdd(yc.Value, digits);
                         return;
                     }
                 }
 
                 if (x.Children.Count() != y.Children.Count() || x.Id != y.Id) {
-                    Matches = false;
+                    matches = false;
+                    return;
+                }
+
+                if (x.Id == ExpressionType.Func && ((Func)x).Name != ((Func)y).Name) {
+                    matches = false;
                     return;
                 }
 
@@ -147,12 +238,14 @@ namespace Engine
                 switch (x.Id) {
                     case ExpressionType.Digit:
                         if (((Character)x).Value != ((Character)y).Value) {
-                            Matches = false;
+                            matches = false;
                             return;
                         }
                         break;
                     case ExpressionType.Variable:
-                        Matches = false;
+                        if (matches != false) {
+                            matches = null;
+                        }
                         return;
                 }
             }
@@ -160,7 +253,7 @@ namespace Engine
             void SetOrAdd(char name, string digits) {
                 if (Env.TryGetValue(name, out var value)) {
                     if (value != digits) {
-                        Matches = false;
+                        matches = false;
                     }
                 } else {
                     Env.Add(name, digits);
@@ -171,6 +264,13 @@ namespace Engine
                 var current = e.Id == ExpressionType.Variable && !Env.ContainsKey(((Character)e).Value);
                 return (current ? 1 : 0) + e.Children.Sum(Unknowns);
             }
+        }
+
+        class UniqVariable
+        {
+            // If variable names could be strings, doing something like $0, $1 would be simpler...
+            char c = (char)Math.Max('z', 'Z');
+            public char Next => ++c;
         }
     }
 
