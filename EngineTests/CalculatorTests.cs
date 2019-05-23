@@ -48,6 +48,12 @@ namespace EngineTests
             Assert.IsTrue(GetEvaluation(@"1+1=a; |a=33; 1+1").Error);
         }
 
+        [TestMethod]
+        public void DuplicateVariable() {
+            Assert.IsTrue(GetEvaluation(@"1+1=a; |a=1; |a=2; 1+1").Error);
+            Assert.AreEqual(@"3", Evaluate(@"1+1=a; |b=3; |a=b; |a=3; 1+1"));
+        }
+
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static string Evaluate(string input) {
             var eval = GetEvaluation(input);

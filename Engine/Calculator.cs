@@ -126,7 +126,7 @@ namespace Engine
             void Solve(Expression x, Expression y) {
                 if (x is Character xc && y is Character yc) {
                     if (x.Id == ExpressionType.Variable && TryGetLiteralDigits(y, Env, out var digits) && digits.Length == 1) {
-                        Env[xc.Value] = digits;
+                        SetOrAdd(xc.Value, digits);
                         return;
                     }
                     if (y.Id == ExpressionType.Variable && TryGetLiteralDigits(x, Env, out digits) && digits.Length == 1) {
@@ -154,6 +154,16 @@ namespace Engine
                     case ExpressionType.Variable:
                         Matches = false;
                         return;
+                }
+            }
+
+            void SetOrAdd(char name, string digits) {
+                if (Env.TryGetValue(name, out var value)) {
+                    if (value != digits) {
+                        Matches = false;
+                    }
+                } else {
+                    Env.Add(name, digits);
                 }
             }
 
