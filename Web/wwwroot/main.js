@@ -36,5 +36,25 @@ window.onload = () => {
     }
   });
 
-  $("button").onclick = run;
+  $("run").onclick = run;
+
+  $("issue").onclick = () => {
+    const codeBlock = "```";
+    const body = `**Description of the problem:**
+
+**Expected results:**
+
+**Actual results:**
+${codeBlock}
+${$("output").value}
+${codeBlock}
+
+**Code:**
+${codeBlock}
+${$("input").value}
+${codeBlock}`;
+    const url = `https://github.com/darthwalsh/ExpLang/issues/new?body=${encodeURIComponent(body)}`;
+    var win = window.open(url, '_blank');
+    win.focus();
+  };
 };
