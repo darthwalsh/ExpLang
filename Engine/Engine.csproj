@@ -47,13 +47,16 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
+  <PropertyGroup>
+    <GrammaticaGenerated>obj\$(Configuration)\Generated</GrammaticaGenerated>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Expression.cs" />
     <Compile Include="ExprExtractor.cs" />
-    <Compile Include="Generated\ExpAnalyzer.cs" />
-    <Compile Include="Generated\ExpConstants.cs" />
-    <Compile Include="Generated\ExpParser.cs" />
-    <Compile Include="Generated\ExpTokenizer.cs" />
+    <Compile Include="$(GrammaticaGenerated)\ExpAnalyzer.cs" />
+    <Compile Include="$(GrammaticaGenerated)\ExpConstants.cs" />
+    <Compile Include="$(GrammaticaGenerated)\ExpParser.cs" />
+    <Compile Include="$(GrammaticaGenerated)\ExpTokenizer.cs" />
     <Compile Include="Calculator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -68,11 +71,20 @@
   <Target Name="BeforeBuild">
     <PropertyGroup>
       <GrammaticaURL>https://github.com/cederberg/grammatica/releases/download/v1.6/grammatica-1.6.zip</GrammaticaURL>
-      <GrammaticaJar>$(TMP)\grammatica-1.6\lib\grammatica-1.6.jar</GrammaticaJar>
+      <GrammaticaZip>$(IntermediateOutputPath)grammatica-1.6.zip</GrammaticaZip>
+      <GrammaticaJar>$(IntermediateOutputPath)grammatica-1.6\lib\grammatica-1.6.jar</GrammaticaJar>
+      <ExecNeeded>false</ExecNeeded>
+      <ExecNeeded Condition="!Exists('$(GrammaticaGenerated)\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('Engine.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('$(GrammaticaGenerated)\ExpAnalyzer.cs').Ticks)">true</ExecNeeded>
     </PropertyGroup>
+    
     <!-- If needed, download and extract grammatica-1.6.jar. Ignore error from first build, due to https://github.com/Microsoft/msbuild/issues/3884 -->
-    <DownloadFile Condition="!Exists($(GrammaticaJar))" SourceUrl="$(GrammaticaURL)" DestinationFolder="$(TMP)" />
-    <Unzip Condition="!Exists($(GrammaticaJar))" SourceFiles="$(TMP)\grammatica-1.6.zip" DestinationFolder="$(TMP)" OverwriteReadOnlyFiles="true" />
-    <Exec Condition="!Exists('Generated\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('Engine.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('Generated\ExpAnalyzer.cs').Ticks)" Command="java -jar &quot;$(GrammaticaJar)&quot; ExpLang.grammar --csoutput Generated --cspublic --csnamespace Engine.Generated --csclassname Exp" />
+    <DownloadFile Condition="$(ExecNeeded) And !Exists($(GrammaticaZip)) And !Exists($(GrammaticaJar))" SourceUrl="$(GrammaticaURL)" DestinationFolder="$(IntermediateOutputPath)" />
+    <Unzip Condition="$(ExecNeeded) And !Exists($(GrammaticaJar))" SourceFiles="$(GrammaticaZip)" DestinationFolder="$(IntermediateOutputPath)" OverwriteReadOnlyFiles="true" />
+    <Exec Condition="$(ExecNeeded)" Command="java -jar &quot;$(GrammaticaJar)&quot; ExpLang.grammar --csoutput $(GrammaticaGenerated) --cspublic --csnamespace Engine.Generated --csclassname Exp" />
+    
+    <!-- Append to FileWrites so the file will be removed on clean -->
+    <ItemGroup>
+      <FileWrites Include="$(GrammaticaZip);$(GrammaticaJar);$(GrammaticaGenerated)\*"/>
+    </ItemGroup>
   </Target>
 </Project>
