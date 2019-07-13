@@ -7,9 +7,9 @@ GRAMMARTYPE = "LL"
 %tokens%
 
 EQUALS = "="
-PLUS = "+"
 PIPE = "|"
 COLON = ":"
+OP = <<[!%&*+\-/<>^~]>>
 DIGIT = <<[0-9]>>
 VARIABLE = <<[a-z]>>
 NEWLINE = <<\r?\n>>
@@ -21,10 +21,10 @@ Facts = EqualOrExpr {Wheres} Facts?;
 
 Wheres = PIPE Equal;
 
-EqualOrExpr = Add [EQUALS Add] NEWLINE+;
-Equal = Add EQUALS Add NEWLINE+;
+EqualOrExpr = Arith [EQUALS Arith] NEWLINE+;
+Equal = Arith EQUALS Arith NEWLINE+;
 
-Add = Cons [PLUS Cons];
+Arith = Cons [OP Cons];
 
 Cons = Char [COLON] Cons
   | Char;

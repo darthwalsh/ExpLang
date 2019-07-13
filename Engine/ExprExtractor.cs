@@ -49,9 +49,9 @@ namespace Engine
             return node;
         }
 
-        public override Node ExitAdd(Production node) {
+        public override Node ExitArith(Production node) {
             if (node.Count > 1) {
-                node.AddValue(new Func("+", (Expression)node[0].Values[0], (Expression)node[2].Values[0]));
+                node.AddValue(new Func((string)node[1].Values[0], (Expression)node[0].Values[0], (Expression)node[2].Values[0]));
             } else {
                 node.AddValue(node[0].Values[0]);
             }
@@ -69,6 +69,11 @@ namespace Engine
 
         public override Node ExitChar(Production node) {
             node.AddValue(node[0].Values[0]);
+            return node;
+        }
+
+        public override Node ExitOp(Token node) {
+            node.AddValue(node.Image);
             return node;
         }
 

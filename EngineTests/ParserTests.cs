@@ -43,6 +43,12 @@ namespace EngineTests
         }
 
         [TestMethod]
+        public void Multiply() {
+            var or = Parse("1*1");
+            Find(or, ExpConstants.OP);
+        }
+
+        [TestMethod]
         public void Fact() {
             var facts = Parse(@"a=1+1
                 |b=2

@@ -76,6 +76,12 @@ a + b = c
 2+3"));
         }
 
+        [TestMethod]
+        public void Op() {
+            Assert.AreEqual(@"3", Evaluate(@"2+1=3; 2*1=2; 2+1"));
+            Assert.AreEqual(@"2", Evaluate(@"2+1=3; 2*1=2; 2*1"));
+        }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
