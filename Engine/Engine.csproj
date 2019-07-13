@@ -74,7 +74,8 @@
       <GrammaticaZip>$(IntermediateOutputPath)grammatica-1.6.zip</GrammaticaZip>
       <GrammaticaJar>$(IntermediateOutputPath)grammatica-1.6\lib\grammatica-1.6.jar</GrammaticaJar>
       <ExecNeeded>false</ExecNeeded>
-      <ExecNeeded Condition="!Exists('$(GrammaticaGenerated)\ExpAnalyzer.cs') Or $([System.IO.File]::GetLastWriteTime('Engine.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('$(GrammaticaGenerated)\ExpAnalyzer.cs').Ticks)">true</ExecNeeded>
+      <ExecNeeded Condition="!Exists('$(GrammaticaGenerated)\ExpAnalyzer.cs')">true</ExecNeeded>
+      <ExecNeeded Condition="$([System.IO.File]::GetLastWriteTime('ExpLang.grammar').Ticks) &gt; $([System.IO.File]::GetLastWriteTime('$(GrammaticaGenerated)\ExpAnalyzer.cs').Ticks)">true</ExecNeeded>
     </PropertyGroup>
     
     <!-- If needed, download and extract grammatica-1.6.jar. Ignore error from first build, due to https://github.com/Microsoft/msbuild/issues/3884 -->
