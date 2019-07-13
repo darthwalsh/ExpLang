@@ -9,3 +9,7 @@ Try it online: https://explang.azurewebsites.net/
 ## Running Locally
 
 Building will download and execute [Grammatica](https://github.com/cederberg/grammatica) to generate source code.
+
+## Deploying
+
+Run `az webapp deployment list-publishing-profiles --name explang --resource-group darthwalsh` to get `userPWD`
