@@ -82,6 +82,11 @@ a + b = c
             Assert.AreEqual(@"2", Evaluate(@"2+1=3; 2*1=2; 2*1"));
         }
 
+        [TestMethod]
+        public void RecursionDoesntStackOverflow() {
+            Assert.IsTrue(GetEvaluation(@"1+1=a; |a=1+1; 1+1").Error);
+        }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);

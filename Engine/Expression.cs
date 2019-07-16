@@ -13,8 +13,10 @@ namespace Engine
         Variable,
     }
 
-    public abstract class Expression
+    public abstract class Expression : IEquatable<Expression>
     {
+        static readonly SimpleEquality simpleEquality = new SimpleEquality();
+
         public Expression(ExpressionType id) {
             Id = id;
         }
@@ -23,7 +25,36 @@ namespace Engine
 
         public abstract IEnumerable<Expression> Children { get; }
 
+        // Variables are normalized before finding hash or equality, so a+b=b*0 is the same as x+y=y*0
+        Expression NormalizeVariables() => new VariableRewriter { Uniq = new UniqVariable() }.Visit(this);
+        public override bool Equals(object obj) => Equals(obj as Expression);
+        public bool Equals(Expression other) {
+            if (other == null) {
+                return false;
+            }
+            return NormalizeVariables().SimpleEquals(other.NormalizeVariables());
+        }
+
+        public override int GetHashCode() => NormalizeVariables().SimpleHash();
+
+        protected virtual int SimpleHash() {
+            var hash = new HashCode();
+            hash.Add(Id);
+            foreach (var c in Children) {
+                hash.Add(c.SimpleHash());
+            }
+            return hash.ToHashCode();
+        }
+
+        protected virtual bool SimpleEquals(Expression other) => Id == other.Id && Children.SequenceEqual(other.Children, simpleEquality);
+
         public override string ToString() => $"{Enum.GetName(typeof(ExpressionType), Id)} -- should implement ToString for {GetType().Name}";
+
+        class SimpleEquality : IEqualityComparer<Expression>
+        {
+            public bool Equals(Expression x, Expression y) => x.SimpleEquals(y);
+            public int GetHashCode(Expression obj) => obj.SimpleHash();
+        }
     }
 
     public class Fact : Expression
@@ -62,6 +93,9 @@ namespace Engine
         public Expression Left => Arg0;
         public Expression Right => Arg1;
 
+        protected override bool SimpleEquals(Expression other) => base.SimpleEquals(other) && Name == ((Func)other).Name;
+        protected override int SimpleHash() => HashCode.Combine(Name, base.SimpleHash());
+
         public override string ToString() {
             switch (Name) {
                 case "=":
@@ -89,6 +123,9 @@ namespace Engine
 
         public char Value { get; private set; }
 
+        protected override bool SimpleEquals(Expression other) => base.SimpleEquals(other) && Value == ((Character)other).Value;
+        protected override int SimpleHash() => HashCode.Combine(Value, base.SimpleHash());
+
         public override string ToString() => Value.ToString();
     }
 
@@ -108,5 +145,27 @@ namespace Engine
         protected virtual Func Visit(Func e) => new Func(e.Name, e.Children.Select(Visit).ToArray());
         protected virtual Character VisitDigit(Character e) => e;
         protected virtual Character VisitVariable(Character e) => e;
+    }
+
+    class VariableRewriter : ExpressionVisitor
+    {
+        public UniqVariable Uniq { get; set; }
+
+        public Dictionary<char, char> Rewrites { get; private set; } = new Dictionary<char, char>();
+
+        protected override Character VisitVariable(Character e) {
+            if (!Rewrites.TryGetValue(e.Value, out var rewrite)) {
+                rewrite = Uniq.Next;
+                Rewrites.Add(e.Value, rewrite);
+            }
+            return new Character(rewrite, ExpressionType.Variable);
+        }
+    }
+
+    class UniqVariable
+    {
+        // If variable names could be strings, doing something like $0, $1 would be simpler...
+        char c = (char)Math.Max('z', 'Z');
+        public char Next => ++c;
     }
 }

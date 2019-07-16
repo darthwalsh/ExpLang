@@ -13,6 +13,8 @@ namespace Engine
         readonly StringBuilder output = new StringBuilder();
         readonly UniqVariable uniq = new UniqVariable();
 
+        readonly Dictionary<Expression, bool> recursionCheck = new Dictionary<Expression, bool>();
+
         const int max_recursion = 10;
         int matcherRecursiveCalls;
 
@@ -82,9 +84,20 @@ namespace Engine
             return false;
         }
 
-        bool TryResolveFact(Func test, out Environment env) =>
+        bool TryResolveFact(Func test, out Environment env) {
+            if (recursionCheck.TryGetValue(test, out var completed) && !completed) {
+                // if completed, could try to cache and return env?
+                env = default;
+                return false;
+            }
+            recursionCheck[test] = false;
+
             // Equality is implicitly reflexive, even though other ops aren't
-            TryResolveFactImpl(test, out env) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env);
+            var result = TryResolveFactImpl(test, out env) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env);
+
+            recursionCheck[test] = true;
+            return result;
+        }
 
         bool TryResolveFactImpl(Func test, out Environment env) {
             foreach (var fact in facts) {
@@ -115,21 +128,6 @@ namespace Engine
 
             protected override Character VisitVariable(Character e) =>
                 Env.TryGetValue(e.Value, out var value) ? new Character(value.Single(), ExpressionType.Digit) : e;
-        }
-
-        class VariableRewriter : ExpressionVisitor
-        {
-            public UniqVariable Uniq { get; set; }
-
-            public Dictionary<char, char> Rewrites { get; private set; } = new Dictionary<char, char>();
-
-            protected override Character VisitVariable(Character e) {
-                if (!Rewrites.TryGetValue(e.Value, out var rewrite)) {
-                    rewrite = Uniq.Next;
-                    Rewrites.Add(e.Value, rewrite);
-                }
-                return new Character(rewrite, ExpressionType.Variable);
-            }
         }
 
         class Matcher
@@ -264,13 +262,6 @@ namespace Engine
                 var current = e.Id == ExpressionType.Variable && !Env.ContainsKey(((Character)e).Value);
                 return (current ? 1 : 0) + e.Children.Sum(Unknowns);
             }
-        }
-
-        class UniqVariable
-        {
-            // If variable names could be strings, doing something like $0, $1 would be simpler...
-            char c = (char)Math.Max('z', 'Z');
-            public char Next => ++c;
         }
     }
 
