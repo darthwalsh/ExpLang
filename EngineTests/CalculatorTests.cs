@@ -8,10 +8,6 @@ namespace EngineTests
     [TestClass]
     public class CalculatorTests {
 #pragma warning disable IDE0022 // Use expression body for methods
-        static TestContext context;
-
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext) => context = testContext;
 
         [TestMethod]
         public void Number() {

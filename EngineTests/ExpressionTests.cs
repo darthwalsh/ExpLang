@@ -9,11 +9,6 @@ namespace EngineTests
     [TestClass]
     public class ExpressionTests
     {
-        static TestContext context;
-
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext) => context = testContext;
-
         static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
         static Expression Parse(string input) => ExprExtractor.GetExpression(splitLines.Replace(input, Environment.NewLine)).Single();
 

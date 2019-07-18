@@ -7,11 +7,6 @@ namespace EngineTests
     [TestClass]
     public class ExprExtractorTests
     {
-        static TestContext context;
-
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext) => context = testContext;
-
         [TestMethod]
         public void Parsing() {
             IsSame("1");
