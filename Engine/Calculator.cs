@@ -10,14 +10,16 @@ namespace Engine
     {
         readonly List<Fact> facts = new List<Fact>();
         readonly List<Expression> expressions = new List<Expression>();
-        readonly StringBuilder output = new StringBuilder();
+        readonly List<Result> results = new List<Result>();
         readonly UniqVariable uniq = new UniqVariable();
 
+        // MAYBE Have a Dictionary<Expression, Env> that also works as a cache, so evaluations aren't repeated
         readonly Dictionary<Expression, bool> recursionCheck = new Dictionary<Expression, bool>();
 
+        // MAYBE Could probably remove the counting check because of the Dictionary, but need to think about that
         const int max_recursion = 10;
         int matcherRecursiveCalls;
-
+        
         internal Calculator(IEnumerable<Expression> expressions) {
             foreach (var e in expressions) {
                 if (e.Id == ExpressionType.Fact) {
@@ -28,7 +30,7 @@ namespace Engine
             }
         }
 
-        internal string Output => output.ToString();
+        internal IEnumerable<Result> Results => results;
         internal bool Error { get; private set; }
 
         static bool TryGetLiteralDigits(Expression e, Environment env, out string digits) {
@@ -65,49 +67,91 @@ namespace Engine
                 // e = X, solve for X
                 var next = uniq.Next;
                 var temp = new Func("=", e, new Character(next, ExpressionType.Variable));
-                if ((MatchesSelf(temp, out var env) || TryResolveFact(temp, out env)) && env.TryGetValue(next, out var value)) {
-                    output.AppendLine(value);
+                if ((MatchesSelf(temp, out var env, out var result) || TryResolveFact(temp, out env, out result)) && env.TryGetValue(next, out var value)) {
+                    if (result.Children.Count > 0) {
+                        // MAYBE this logic could be avoided if top-level expressions didn't do the next weirdness
+                        var solving = result.Children[0].Line;
+                        result.Children[0].Line = solving.Substring(0, solving.Length - 4) + "...";
+                    }
+                    result.Line = value;
+                    results.Add(result);
                 } else {
                     Error = true;
-                    output.AppendLine($"Error! Can't evaluate '{e}'");
+                    results.Add(new Result($"Error! Can't evaluate '{e}'"));
                 }
             }
         }
 
-        bool MatchesSelf(Func test, out Environment env) {
+        bool MatchesSelf(Func test, out Environment env, out Result result) {
             var matcher = new Matcher(test.Left, test.Right, new Func[] { }, this); // TODO don't need wheres?
             if (matcher.Matches) {
                 env = matcher.Env;
+                result = new Result("");
                 return true;
             }
             env = default;
+            result = default;
             return false;
         }
 
-        bool TryResolveFact(Func test, out Environment env) {
+        bool TryResolveFact(Func test, out Environment env, out Result result) {
             if (recursionCheck.TryGetValue(test, out var completed) && !completed) {
                 // if completed, could try to cache and return env?
                 env = default;
+                result = default;
                 return false;
             }
             recursionCheck[test] = false;
 
             // Equality is implicitly reflexive, even though other ops aren't
-            var result = TryResolveFactImpl(test, out env) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env);
+            // MAYBE there could be an implicit rule A = B |B = A that allow for reflecting and solving?
+            var success = TryResolveFactImpl(test, out env, out result) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env, out result);
 
             recursionCheck[test] = true;
-            return result;
+            return success;
         }
 
-        bool TryResolveFactImpl(Func test, out Environment env) {
+        // TODO TODO TODO add some tests
+        /// When solving i.e. 1 + 2 = x
+        /// env = { x: 3 }
+        /// result = $ToBeFilledInLater
+        ///   Applied rule a + b = c Implies a = 1, b = 2, c = 3
+        ///     | a + 1 = x Implies x = 2
+        ///       Solving 1 + 1 = x
+        ///       ...
+        ///     | y + 1 = b Implies y = 1
+        ///       ...
+        ///     ...
+        bool TryResolveFactImpl(Func test, out Environment env, out Result result) {
             foreach (var fact in facts) {
                 var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
                 if (matcher.Matches) {
                     env = matcher.Env;
-                    return true;
+
+                    result = new Result("");
+                    result.Children.Add(new Result($"Solving {test}"));
+
+                    var factVars = VariableFinder.Find(fact.Equality);
+                    var implies = string.Join(", ", factVars.Select(v => $"{v} = {matcher.Env[v]}"));
+                    var line = $"Applied rule {fact.Equality}";
+                    if (factVars.Any()) {
+                        line += $" Implies {implies}";
+                    }
+                    result.Children.Add(new Result(line));
+
+                    var defined = new HashSet<char>(matcher.InitialEnv.Keys);
+                    foreach (var (where, r) in matcher.Solution) {
+                        var whereVars = VariableFinder.Find(where);
+                        var defs = string.Join(", ", whereVars.Where(defined.Add).Select(v => $"{v} = {matcher.Env[v]}"));
+
+                        r.Line = $"| {where} {(defs.Any() ? "Implies " + defs : "")}";
+                        result.Children.Add(r);
+                    }
+                    return true; // TODO shouldn't something like a + a = 4 require looping all rules to show a isn't unique?
                 }
             }
             env = default;
+            result = default;
             return false;
         }
 
@@ -130,10 +174,30 @@ namespace Engine
                 Env.TryGetValue(e.Value, out var value) ? new Character(value.Single(), ExpressionType.Digit) : e;
         }
 
+        class VariableFinder : ExpressionVisitor
+        {
+            readonly List<char> vars = new List<char>();
+            readonly HashSet<char> seen = new HashSet<char>();
+
+            public static ICollection<char> Find(Expression e) {
+                var finder = new VariableFinder();
+                finder.Visit(e);
+                return finder.vars;
+            }
+
+            protected override Character VisitVariable(Character e) {
+                if (seen.Add(e.Value)) {
+                    vars.Add(e.Value);
+                }
+                return base.VisitVariable(e);
+            }
+        }
+
         class Matcher
         {
             readonly Calculator calc;
             bool? matches = true; // null for possibly, depending on vars
+            public readonly List<(Expression, Result)> Solution = new List<(Expression, Result)>();
 
             public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Calculator calc) {
                 if (calc.matcherRecursiveCalls++ > max_recursion) {
@@ -144,13 +208,11 @@ namespace Engine
                     this.calc = calc;
 
                     // Do a pretest to try to assign as many variables as possible first, then check Solve() again later
-                    // This nicely prevents some recurive StackOverflow, but it might still be easy to trip it when
-                    // Matcher recursively calls TryResolveFact which calls Matcher...
-                    // TODO the solution is probably some sort of cache that lets you mark an evaluation as in-progress
                     Solve(x, y);
                     if (matches.HasValue && !matches.Value) {
                         return;
                     }
+                    InitialEnv = new Environment(Env);
                     matches = true;
 
                     var toResolve = wheres.ToList();
@@ -165,6 +227,7 @@ namespace Engine
                 }
             }
 
+            public Environment InitialEnv { get; private set; }
             public Environment Env { get; private set; } = new Environment();
             public bool Matches => matches.HasValue && matches.Value;
 
@@ -179,6 +242,14 @@ namespace Engine
                     }
                 }
 
+                // TODO TODO TODO BUG!
+                /*
+                   This program goes into an infinite loop....
+                    7&7 = a
+                    | a + a = 3
+
+                    7&7
+                */
                 if (min > 1) {
                     if (matches != false) {
                         matches = null;
@@ -192,8 +263,10 @@ namespace Engine
                 var inlined = new VariableInliner {
                     Env = Env
                 }.Visit(where);
-                var replaced = calc.RewriteVariables(inlined, out var backMap);
-                if (calc.TryResolveFact((Func)replaced, out var resolvedEnv)) {
+                var replaced = calc.RewriteVariables(inlined, out var backMap); // MAYBE is this needed? It's really ugly in the explanation
+                if (calc.TryResolveFact((Func)replaced, out var resolvedEnv, out var result)) {
+                    Solution.Add((where, result));
+
                     foreach (var kvp in resolvedEnv) {
                         // Only try to set variable we've introduce into the fact
                         // TODO add some tests around this
@@ -265,19 +338,47 @@ namespace Engine
         }
     }
 
+    class Result
+    {
+        public List<Result> Children { get; set; } = new List<Result>();
+        public string Line { get; set; }
+        public Result(string line) {
+            Line = line;
+        }
+
+        public override string ToString() => Line + (Children.Any() ? "..." : "");
+    }
+
     public class Evalutation
     {
         public string Result { get; set; }
         public bool Error { get; set; }
 
-        public Evalutation(string input) {
+        public Evalutation(string input, bool includeChildren) {
             var expression = ExprExtractor.GetExpression(input);
 
             var calc = new Calculator(expression);
             calc.Evaluate();
 
-            Result = calc.Output;
+            var builder = new StringBuilder();
+
+            // TODO this should move to test code, and GUI should display clickable tree
+            foreach (var r in calc.Results) {
+                if (includeChildren) {
+                    Print(r, 0, builder);
+                } else {
+                    builder.AppendLine(r.Line);
+                }
+            }
+            Result = builder.ToString();
             Error = calc.Error;
+        }
+
+        void Print(Result result, int indent, StringBuilder builder) {
+            builder.AppendLine(new string(' ', indent) + result.Line);
+            foreach (var c in result.Children) {
+                Print(c, indent + 4, builder);
+            }
         }
     }
 

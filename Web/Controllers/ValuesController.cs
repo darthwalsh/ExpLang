@@ -12,7 +12,7 @@ namespace Web.Controllers
         [HttpPost]
         public ActionResult<Output> Post([FromBody] Input value) {
             try {
-                var eval = new Evalutation(value.text);
+                var eval = new Evalutation(value.text, includeChildren: value.explain);
                 return new Output {
                     result = eval.Result,
                     error = eval.Error
@@ -28,6 +28,7 @@ namespace Web.Controllers
         public class Input
         {
             public string text { get; set; }
+            public bool explain { get; set; }
         }
 
         public class Output

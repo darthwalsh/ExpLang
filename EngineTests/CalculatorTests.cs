@@ -92,6 +92,6 @@ a + b = c
             return eval.Result.Trim();
         }
 
-        static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine));
+        static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine), includeChildren: false);
     }
 }

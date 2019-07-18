@@ -12,7 +12,8 @@ async function run() {
               "Content-Type": "application/json"
           },
           body: JSON.stringify({
-              text: $("input").value
+              text: $("input").value,
+              explain: $("explain").checked
           })
       });
       const result = await request.json();
@@ -28,8 +29,13 @@ window.onload = () => {
   if (localStorage.getItem("in")) {
     $("input").value = localStorage.getItem("in");
   }
+  if (localStorage.getItem("explain")) {
+    $("explain").checked = true;
+  }
   $("input").addEventListener("input", () =>
     localStorage.setItem("in", $("input").value));
+  $("explain").addEventListener("click", () =>
+    localStorage.setItem("explain", $("explain").checked ? "true" : ""));
   $("input").addEventListener("keydown", e => {
     if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
       run();
