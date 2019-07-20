@@ -5,4 +5,3 @@ obj
 packages
 *.nupkg
 .vs/
-.vscode/
