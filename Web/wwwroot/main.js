@@ -1,27 +1,27 @@
 "use strict";
 
-function $(id) { 
-    return document.getElementById(id);
+function $(id) {
+  return document.getElementById(id);
 }
 
 async function run() {
   try {
-      var request = await fetch("values", {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-              text: $("input").value,
-              explain: $("explain").checked
-          })
-      });
-      const result = await request.json();
-      $("output").textContent = result.result;
-      $("output").style.color = result.error ? "red" : "black";
+    var request = await fetch("values", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: $("input").value,
+        explain: $("explain").checked
+      })
+    });
+    const result = await request.json();
+    $("output").textContent = result.result;
+    $("output").style.color = result.error ? "red" : "black";
   } catch (ex) {
-      $("output").textContent = `js error: ${ex}`;
-      $("output").style.color = "red";
+    $("output").textContent = `js error: ${ex}`;
+    $("output").style.color = "red";
   }
 }
 
