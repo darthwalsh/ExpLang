@@ -97,15 +97,12 @@ namespace Engine
     protected override int SimpleHash() => HashCode.Combine(Name, base.SimpleHash());
 
     public override string ToString() {
+      if (args.Count == 2 && Name.Length == 1 && "=!%&*+\\-/<>^~".Contains(Name[0])) {
+        return $"{args[0]} {Name} {args[1]}";
+      }
       switch (Name) {
-        case "=":
-        case "+":
         case ":":
-          if (args.Count != 2) {
-            throw new InvalidOperationException("Expected arity 2");
-          }
-          var op = Name == ":" ? "" : $" {Name} ";
-          return $"{args[0]}{op}{args[1]}";
+          return string.Concat(args);
         default:
           return $"{Name}({string.Join(", ", args)})";
       }

@@ -53,5 +53,16 @@ namespace EngineTests
       Assert.AreEqual(Parse("bab"), Parse("aba"));
       Assert.AreEqual(Parse("0 * x = x + y"), Parse("0 * a = a + x"));
     }
+
+    [TestMethod]
+    public void ArityThree() {
+      var x1z = new[] {
+        new Character('x', ExpressionType.Variable),
+        new Character('1', ExpressionType.Digit),
+        new Character('z', ExpressionType.Variable)
+      };
+      Assert.AreEqual("x1z", new Func(":", x1z).ToString());
+      Assert.AreEqual("+(x, 1, z)", new Func("+", x1z).ToString());
+    }
   }
 }
