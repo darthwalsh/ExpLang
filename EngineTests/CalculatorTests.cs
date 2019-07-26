@@ -84,6 +84,44 @@ a + b = c
       Assert.IsTrue(GetEvaluation(@"1+1=a; |a=1+1; 1+1").Error);
     }
 
+    [TestMethod]
+    public void DifferentEval() {
+      Assert.IsTrue(GetEvaluation(@"0/0=0; 0/0=1; 0/0").Error);
+      Assert.AreEqual(@"2", Evaluate(@"1+1=2; 1+1=2; 1+1"));
+
+      Assert.IsTrue(GetEvaluation(@"1*0=0; 2*0=0; 1^1=a; |a*0=0; 1^1").Error);
+      Assert.AreEqual(@"1", Evaluate(@"1*0=0; 1*0=0; 1^1=a; |a*0=0; 1^1"));
+    }
+
+    [TestMethod]
+    public void MultiUnknown() {
+      Assert.AreEqual(@"1", Evaluate(@"1+2=3; 1&1=a; |a+b=3; 1&1"));
+      Assert.AreEqual(@"2", Evaluate(@"1+2=3; 1&1=b; |a+b=3; 1&1"));
+     
+      Assert.IsTrue(GetEvaluation(@"1+2=3; 2+1=3; 1&1=b; |a+b=3; 1&1").Error);
+    }
+
+    [TestMethod]
+    public void MultiUnknownOnlyOnePossible() {
+      Assert.AreEqual(@"1", Evaluate(@"1+1=2; 1&1=a; |a+a=2; 1&1"));
+      Assert.AreEqual(@"1", Evaluate(@"1+1=2; 0+2=2; 1&1=a; |a+a=2; 1&1"));
+      Assert.AreEqual(@"1", Evaluate(@"0+2=2; 1+1=2; 1&1=a; |a+a=2; 1&1"));
+    }
+
+    [TestMethod]
+    public void MultipathAddtion() {
+      Assert.AreEqual(@"3", Evaluate(@"1 + 1 = 2
+2 + 1 = 3
+1 + 2 = 3
+
+a + b = c
+| a + 1 = x
+| y + 1 = b
+| x + y = c
+
+1+2"));
+    }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
     static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);

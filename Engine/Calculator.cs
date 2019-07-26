@@ -82,6 +82,7 @@ namespace Engine
       }
     }
 
+    // MAYBE this can be removed if there was a default rule A=A
     bool MatchesSelf(Func test, out Environment env, out Result result) {
       var matcher = new Matcher(test.Left, test.Right, new Func[] { }, this); // TODO don't need wheres?
       if (matcher.Matches) {
@@ -123,9 +124,19 @@ namespace Engine
     ///       ...
     ///     ...
     bool TryResolveFactImpl(Func test, out Environment env, out Result result) {
+      env = default;
+      result = default;
       foreach (var fact in facts) {
         var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
         if (matcher.Matches) {
+          if (env != null) {
+            if (!EnvironmentEqual(test, env, matcher.Env)) {
+              return false;
+            } else {
+              result.Children.Add(new Result($"Redundant rule {fact.Equality}"));
+              continue;
+            }
+          }
           env = matcher.Env;
 
           result = new Result("");
@@ -147,13 +158,17 @@ namespace Engine
             r.Line = $"| {where} {(defs.Any() ? "Implies " + defs : "")}";
             result.Children.Add(r);
           }
-          return true; // TODO shouldn't something like a + a = 4 require looping all rules to show a isn't unique?
+          
+          // Don't return true until end of loop, to ensure there aren't different results between rules
         }
       }
-      env = default;
-      result = default;
-      return false;
+
+      return env != null;
     }
+
+    // Only check variables in test, ignoring variables that might have been defined in fact
+    static bool EnvironmentEqual(Func test, Environment x, Environment y) => VariableFinder.Find(test).All(c =>
+      x.TryGetValue(c, out var xv) && y.TryGetValue(c, out var yv) && xv == yv);
 
     // TODO test for rewrite needed?
     Expression RewriteVariables(Expression e, out Dictionary<char, Character> backMap) {
@@ -250,12 +265,6 @@ namespace Engine
 
             7&7
         */
-        if (min > 1) {
-          if (matches != false) {
-            matches = null;
-          }
-          return;
-        }
 
         var where = toResolve[minI];
         toResolve.RemoveAt(minI);
