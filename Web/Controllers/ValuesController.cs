@@ -10,17 +10,14 @@ namespace Web.Controllers
   {
     // POST values
     [HttpPost]
-    public ActionResult<Output> Post([FromBody] Input value) {
+    public ActionResult<Evalutation> Post([FromBody] Input value) {
       try {
-        var eval = new Evalutation(value.text, includeChildren: value.explain);
-        return new Output {
-          result = eval.Result,
-          error = eval.Error
-        };
+        var eval = new Evalutation(value.text);
+        return eval;
       } catch (Exception e) {
-        return new Output {
-          result = e.ToString(),
-          error = true
+        return new Evalutation {
+          Results = new[] { new Result(e.ToString()) },
+          Error = true
         };
       }
     }
@@ -28,13 +25,6 @@ namespace Web.Controllers
     public class Input
     {
       public string text { get; set; }
-      public bool explain { get; set; }
-    }
-
-    public class Output
-    {
-      public string result { get; set; }
-      public bool error { get; set; }
     }
   }
 }

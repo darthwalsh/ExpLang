@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -12,10 +12,11 @@
 <body>
   <h1>ExpLang - <a href="https://github.com/darthwalsh/ExpLang">Github</a></h1>
   <button id="run">Run</button>
-  <input type="checkbox" id="explain" name="explain" /><label for="explain">Explain</label>
-  <button id="issue" style="float: right">Report Issue</button><br />
-  <textarea id="input" style="width: 49%;height: 80vh;">1+1=2&#13;&#10;1+1</textarea>
-  <textarea id="output" style="width: 49%;height: 80vh;" readonly>Goodbye World</textarea>
+  <button id="issue" style="float: right">Report Issue</button>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; height: 80vh;">
+    <textarea id="input" style="width: 100%; border: thin solid #808080">1+1=2&#13;&#10;1+1</textarea>
+    <div id="output" style="width: 100%; border: thin solid #808080; padding: 2px"><code>Click Run</code></div>
+  </div>
 </body>
 
 </html>

@@ -1,6 +1,8 @@
 ﻿using Engine;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace EngineTests
@@ -122,15 +124,61 @@ a + b = c
 1+2"));
     }
 
+    [TestMethod]
+    public void TestExplained() {
+      Assert.AreEqual(@"3
+    Solving 1 + 2...
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3
+    | a + 1 = x Implies x = 2
+        Solving 1 + 1 = |
+        Applied rule 1 + 1 = 2
+    | y + 1 = b Implies y = 1
+        Solving  + 1 = 2
+        Applied rule 1 + 1 = 2
+    | x + y = c Implies c = 3
+        Solving 2 + 1 = ¤
+        Applied rule 2 + 1 = 3
+    Redundant rule 1 + 2 = 3
+", EvaluateExplained(@"1 + 1 = 2
+2 + 1 = 3
+
+a + b = c
+| a + 1 = x
+| y + 1 = b
+| x + y = c
+
+1 + 2 = 3
+
+1+2"));
+    }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
-    static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
     static string Evaluate(string input) {
       var eval = GetEvaluation(input);
       Assert.IsFalse(eval.Error);
-      return eval.Result.Trim();
+      return string.Join(Environment.NewLine, eval.Results.Select(r => r.Line));
     }
 
-    static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine), includeChildren: false);
+    static string EvaluateExplained(string input) {
+      var eval = GetEvaluation(input);
+      Assert.IsFalse(eval.Error);
+
+      var builder = new StringBuilder();
+      foreach (var r in eval.Results) {
+        Print(r, 0, builder);
+      }
+      return builder.ToString();
+    }
+
+    static void Print(Result result, int indent, StringBuilder builder) {
+      builder.AppendLine(new string(' ', indent) + result.Line);
+      foreach (var c in result.Children) {
+        Print(c, indent + 4, builder);
+      }
+    }
+
+    static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
+    static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine));
   }
 }

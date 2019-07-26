@@ -4,6 +4,17 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function addResult(e, result, indent) {
+  const div = document.createElement("div");
+  const line = document.createElement("code");
+  line.textContent = result.line;
+  line.style.marginLeft = (indent * 4) + "ch";
+  div.appendChild(line);
+  div.appendChild(document.createElement("br"));
+  result.children.forEach(r => addResult(div, r, indent + 1));
+  e.appendChild(div);
+}
+
 async function run() {
   try {
     var request = await fetch("values", {
@@ -12,12 +23,15 @@ async function run() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        text: $("input").value,
-        explain: $("explain").checked
+        text: $("input").value
       })
     });
     const result = await request.json();
-    $("output").textContent = result.result;
+    while ($("output").firstChild) {
+      $("output").removeChild($("output").firstChild);
+    }
+    result.results.forEach(r => addResult($("output"), r, 0));
+
     $("output").style.color = result.error ? "red" : "black";
   } catch (ex) {
     $("output").textContent = `js error: ${ex}`;
@@ -29,13 +43,8 @@ window.onload = () => {
   if (localStorage.getItem("in")) {
     $("input").value = localStorage.getItem("in");
   }
-  if (localStorage.getItem("explain")) {
-    $("explain").checked = true;
-  }
   $("input").addEventListener("input", () =>
     localStorage.setItem("in", $("input").value));
-  $("explain").addEventListener("click", () =>
-    localStorage.setItem("explain", $("explain").checked ? "true" : ""));
   $("input").addEventListener("keydown", e => {
     if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
       run();

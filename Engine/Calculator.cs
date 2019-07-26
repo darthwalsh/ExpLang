@@ -17,7 +17,7 @@ namespace Engine
     readonly Dictionary<Expression, bool> recursionCheck = new Dictionary<Expression, bool>();
 
     // MAYBE Could probably remove the counting check because of the Dictionary, but need to think about that
-    const int max_recursion = 10;
+    const int max_recursion = 25;
     int matcherRecursiveCalls;
 
     internal Calculator(IEnumerable<Expression> expressions) {
@@ -347,7 +347,7 @@ namespace Engine
     }
   }
 
-  class Result
+  public class Result
   {
     public List<Result> Children { get; set; } = new List<Result>();
     public string Line { get; set; }
@@ -360,34 +360,19 @@ namespace Engine
 
   public class Evalutation
   {
-    public string Result { get; set; }
+    public IEnumerable<Result> Results { get; set; }
     public bool Error { get; set; }
 
-    public Evalutation(string input, bool includeChildren) {
+    public Evalutation() { }
+
+    public Evalutation(string input) {
       var expression = ExprExtractor.GetExpression(input);
 
       var calc = new Calculator(expression);
       calc.Evaluate();
 
-      var builder = new StringBuilder();
-
-      // TODO this should move to test code, and GUI should display clickable tree
-      foreach (var r in calc.Results) {
-        if (includeChildren) {
-          Print(r, 0, builder);
-        } else {
-          builder.AppendLine(r.Line);
-        }
-      }
-      Result = builder.ToString();
+      Results = calc.Results;
       Error = calc.Error;
-    }
-
-    void Print(Result result, int indent, StringBuilder builder) {
-      builder.AppendLine(new string(' ', indent) + result.Line);
-      foreach (var c in result.Children) {
-        Print(c, indent + 4, builder);
-      }
     }
   }
 
