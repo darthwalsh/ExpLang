@@ -5,17 +5,28 @@ function $(id) {
 }
 
 function addResult(e, result, indent) {
-  const div = document.createElement("div");
-  const line = document.createElement("code");
+  if (result.children.length) {
+    const triangle = document.createElement("pre");
+    triangle.className = "triangle";
+    triangle.style.marginLeft = indent * 4 + "ch";
+    triangle.textContent = "▼";
+    e.appendChild(triangle);
+  }
+
+  const line = document.createElement("pre");
   line.textContent = result.line;
-  line.style.marginLeft = (indent * 4) + "ch";
-  div.appendChild(line);
-  div.appendChild(document.createElement("br"));
-  result.children.forEach(r => addResult(div, r, indent + 1));
-  e.appendChild(div);
+  line.style.marginLeft = 1 + indent * 4 + "ch";
+  e.appendChild(line);
+
+  if (result.children.length) {
+    const div = document.createElement("div");
+    result.children.forEach(r => addResult(div, r, indent + 1));
+    e.appendChild(div);
+  }
 }
 
 async function run() {
+  let result = "Oops";
   try {
     var request = await fetch("values", {
       method: "POST",
@@ -26,17 +37,18 @@ async function run() {
         text: $("input").value
       })
     });
-    const result = await request.json();
-    while ($("output").firstChild) {
-      $("output").removeChild($("output").firstChild);
-    }
-    result.results.forEach(r => addResult($("output"), r, 0));
-
-    $("output").style.color = result.error ? "red" : "black";
+    result = await request.json();
   } catch (ex) {
     $("output").textContent = `js error: ${ex}`;
     $("output").style.color = "red";
   }
+  
+  while ($("output").firstChild) {
+    $("output").removeChild($("output").firstChild);
+  }
+  result.results.forEach(r => addResult($("output"), r, 0));
+
+  $("output").style.color = result.error ? "red" : "black";
 }
 
 window.onload = () => {
