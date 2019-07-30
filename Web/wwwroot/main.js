@@ -21,8 +21,10 @@ function triangleClick(e) {
 }
 
 function addResult(e, result, indent) {
+  const explainChecked = $("explain").checked;
+  let triangle = null;
   if (result.children.length) {
-    const triangle = document.createElement("pre");
+    triangle = document.createElement("pre");
     triangle.className = "triangle";
     triangle.style.marginLeft = indent * 4 + "ch";
     triangle.textContent = expanded;
@@ -39,6 +41,10 @@ function addResult(e, result, indent) {
     const div = document.createElement("div");
     result.children.forEach(r => addResult(div, r, indent + 1));
     e.appendChild(div);
+  
+    if (!explainChecked) {
+      triangleClick({ target: triangle });
+    }
   }
 }
 
@@ -72,6 +78,21 @@ window.onload = () => {
   if (localStorage.getItem("in")) {
     $("input").value = localStorage.getItem("in");
   }
+  if (localStorage.getItem("explain")) {
+    $("explain").checked = true;
+  }
+    
+  $("explain").addEventListener("click", () => {
+    const checked = $("explain").checked;
+    localStorage.setItem("explain", checked ? "true" : "");
+    [...document.getElementsByClassName("triangle")].forEach(triangle => {
+      const isExpanded = triangle.textContent === expanded;
+      if (isExpanded !== checked) {
+        triangleClick({ target: triangle });
+      }
+    });
+  });
+
   $("input").addEventListener("input", () =>
     localStorage.setItem("in", $("input").value));
   $("input").addEventListener("keydown", e => {
