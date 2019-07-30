@@ -4,12 +4,29 @@ function $(id) {
   return document.getElementById(id);
 }
 
+const expanded = "▼";
+const collapsed = "▶";
+/**
+ * @param {object} e MouseEvent
+ * @param {HTMLElement} e.target triangle
+ */
+function triangleClick(e) {
+  const triangle = e.target;
+  const div = triangle.nextElementSibling.nextElementSibling;
+  const expand = triangle.textContent !== expanded;
+
+  triangle.textContent = expand ? expanded : collapsed;
+  triangle.style.transform = expand ? "" : "scale(0.7) translateX(-0.4ch)"; // Unicode characters are different sizes...
+  div.style.display = expand ? "" : "none";
+}
+
 function addResult(e, result, indent) {
   if (result.children.length) {
     const triangle = document.createElement("pre");
     triangle.className = "triangle";
     triangle.style.marginLeft = indent * 4 + "ch";
-    triangle.textContent = "▼";
+    triangle.textContent = expanded;
+    triangle.onclick = triangleClick;
     e.appendChild(triangle);
   }
 
