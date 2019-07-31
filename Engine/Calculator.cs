@@ -8,7 +8,9 @@ namespace Engine
 {
   public class Calculator
   {
-    readonly List<Fact> facts = new List<Fact>();
+    static readonly Fact reflexive = new Fact(new Func("=", new Character('a', ExpressionType.Variable), new Character('a', ExpressionType.Variable)), new Func[0]);
+    static readonly ICollection<Fact> axioms = new List<Fact> { reflexive }.AsReadOnly();
+    readonly List<Fact> facts = new List<Fact>(axioms);
     readonly List<Expression> expressions = new List<Expression>();
     readonly List<Result> results = new List<Result>();
     readonly UniqVariable uniq = new UniqVariable();
@@ -67,7 +69,7 @@ namespace Engine
         // e = X, solve for X
         var next = uniq.Next;
         var temp = new Func("=", e, new Character(next, ExpressionType.Variable));
-        if ((MatchesSelf(temp, out var env, out var result) || TryResolveFact(temp, out env, out result)) && env.TryGetValue(next, out var value)) {
+        if ((TryResolveFact(temp, out var env, out var result)) && env.TryGetValue(next, out var value)) {
           if (result.Children.Count > 0) {
             // MAYBE this logic could be avoided if top-level expressions didn't do the next weirdness
             var solving = result.Children[0].Line;
@@ -80,19 +82,6 @@ namespace Engine
           results.Add(new Result($"Error! Can't evaluate '{e}'"));
         }
       }
-    }
-
-    // MAYBE this can be removed if there was a default rule A=A
-    bool MatchesSelf(Func test, out Environment env, out Result result) {
-      var matcher = new Matcher(test.Left, test.Right, new Func[] { }, this); // TODO don't need wheres?
-      if (matcher.Matches) {
-        env = matcher.Env;
-        result = new Result("");
-        return true;
-      }
-      env = default;
-      result = default;
-      return false;
     }
 
     bool TryResolveFact(Func test, out Environment env, out Result result) {
