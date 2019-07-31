@@ -57,9 +57,9 @@ namespace EngineTests
     [TestMethod]
     public void ArityThree() {
       var x1z = new[] {
-        new Character('x', ExpressionType.Variable),
-        new Character('1', ExpressionType.Digit),
-        new Character('z', ExpressionType.Variable)
+        new Character('x'),
+        new Character('1'),
+        new Character('z')
       };
       Assert.AreEqual("x1z", new Func(":", x1z).ToString());
       Assert.AreEqual("+(x, 1, z)", new Func("+", x1z).ToString());

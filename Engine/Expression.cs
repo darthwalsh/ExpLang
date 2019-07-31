@@ -111,8 +111,8 @@ namespace Engine
 
   public class Character : Expression
   {
-    public Character(char c, ExpressionType id)
-        : base(id) {
+    public Character(char c)
+        : base(char.IsDigit(c) ? ExpressionType.Digit : ExpressionType.Variable) {
       Value = c;
     }
 
@@ -155,7 +155,7 @@ namespace Engine
         rewrite = Uniq.Next;
         Rewrites.Add(e.Value, rewrite);
       }
-      return new Character(rewrite, ExpressionType.Variable);
+      return new Character(rewrite);
     }
   }
 

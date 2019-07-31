@@ -78,12 +78,12 @@ namespace Engine
     }
 
     public override Node ExitVariable(Token node) {
-      node.AddValue(new Character(node.Image.Single(), ExpressionType.Variable));
+      node.AddValue(new Character(node.Image.Single()));
       return node;
     }
 
     public override Node ExitDigit(Token node) {
-      node.AddValue(new Character(node.Image.Single(), ExpressionType.Digit));
+      node.AddValue(new Character(node.Image.Single()));
       return node;
     }
 

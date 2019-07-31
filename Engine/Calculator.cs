@@ -8,7 +8,7 @@ namespace Engine
 {
   public class Calculator
   {
-    static readonly Fact reflexive = new Fact(new Func("=", new Character('a', ExpressionType.Variable), new Character('a', ExpressionType.Variable)), new Func[0]);
+    static readonly Fact reflexive = new Fact(new Func("=", new Character('a'), new Character('a')), new Func[0]);
     static readonly ICollection<Fact> axioms = new List<Fact> { reflexive }.AsReadOnly();
     readonly List<Fact> facts = new List<Fact>(axioms);
     readonly List<Expression> expressions = new List<Expression>();
@@ -68,8 +68,8 @@ namespace Engine
       foreach (var e in expressions) {
         // e = X, solve for X
         var next = uniq.Next;
-        var temp = new Func("=", e, new Character(next, ExpressionType.Variable));
-        if ((TryResolveFact(temp, out var env, out var result)) && env.TryGetValue(next, out var value)) {
+        var temp = new Func("=", e, new Character(next));
+        if (TryResolveFact(temp, out var env, out var result) && env.TryGetValue(next, out var value)) {
           if (result.Children.Count > 0) {
             // MAYBE this logic could be avoided if top-level expressions didn't do the next weirdness
             var solving = result.Children[0].Line;
@@ -165,7 +165,7 @@ namespace Engine
         Uniq = uniq
       };
       var expression = rewriter.Visit(e);
-      backMap = rewriter.Rewrites.ToDictionary(kvp => kvp.Value, kvp => new Character(kvp.Key, ExpressionType.Variable));
+      backMap = rewriter.Rewrites.ToDictionary(kvp => kvp.Value, kvp => new Character(kvp.Key));
       return expression;
     }
 
@@ -175,7 +175,7 @@ namespace Engine
       public Environment Env { get; set; }
 
       protected override Character VisitVariable(Character e) =>
-          Env.TryGetValue(e.Value, out var value) ? new Character(value.Single(), ExpressionType.Digit) : e;
+          Env.TryGetValue(e.Value, out var value) ? new Character(value.Single()) : e;
     }
 
     class VariableFinder : ExpressionVisitor
