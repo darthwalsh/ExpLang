@@ -86,9 +86,9 @@ namespace Engine
 
     bool TryResolveFact(Func test, out Environment env, out Result result) {
       if (recursionCheck.TryGetValue(test, out var completed) && !completed) {
-        // if completed, could try to cache and return env?
+        // MAYBE if completed, could try to cache and return env?
         env = default;
-        result = default;
+        result = new Result("Trying to solve the exact same problem without any new progress");
         return false;
       }
       recursionCheck[test] = false;
@@ -114,7 +114,8 @@ namespace Engine
     ///     ...
     bool TryResolveFactImpl(Func test, out Environment env, out Result result) {
       env = default;
-      result = default;
+      result = null;
+      var failures = new Result("Rules that didn't help:");
       foreach (var fact in facts) {
         var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
         if (matcher.Matches) {
@@ -149,7 +150,15 @@ namespace Engine
           }
           
           // Don't return true until end of loop, to ensure there aren't different results between rules
+        } else {
+          failures.Children.Add(new Result($"Rule {fact.Equality} didn't help because {matcher.Reason}"));
         }
+      }
+
+      if (result == null) {
+        result = failures;
+      } else if (failures.Children.Any()) {
+        result.Children.Add(failures);
       }
 
       return env != null;
@@ -201,6 +210,8 @@ namespace Engine
     {
       readonly Calculator calc;
       bool? matches = true; // null for possibly, depending on vars
+      string reason;
+      string unReason;
       public readonly List<(Expression, Result)> Solution = new List<(Expression, Result)>();
 
       public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Calculator calc) {
@@ -234,6 +245,8 @@ namespace Engine
       public Environment InitialEnv { get; private set; }
       public Environment Env { get; private set; } = new Environment();
       public bool Matches => matches.HasValue && matches.Value;
+
+      public string Reason => reason ?? unReason;
 
       void HandleWhere(List<Func> toResolve) {
         var min = int.MaxValue;
@@ -281,13 +294,18 @@ namespace Engine
           }
         }
 
-        if (x.Children.Count() != y.Children.Count() || x.Id != y.Id) {
-          matches = false;
+        if (x.Id != y.Id) {
+          NoMatch($"{x} is {x.Id.GetName()} but {y} is {y.Id.GetName()}");
           return;
         }
 
-        if (x.Id == ExpressionType.Func && ((Func)x).Name != ((Func)y).Name) {
-          matches = false;
+        if (x.Children.Count() != y.Children.Count()) {
+          NoMatch($"{x} has {x.Children.Count()} children but {y} has {y.Children.Count()} children");
+          return;
+        }
+
+        if (x.Id == ExpressionType.Func && x is Func xFunc && y is Func yFunc && xFunc.Name != yFunc.Name) {
+          NoMatch($"{x} is function {xFunc.Name} but {y} is function {yFunc.Name}");
           return;
         }
 
@@ -298,22 +316,36 @@ namespace Engine
         switch (x.Id) {
           case ExpressionType.Digit:
             if (((Character)x).Value != ((Character)y).Value) {
-              matches = false;
+              NoMatch($"Digit {x} is not {y}");
               return;
             }
             break;
           case ExpressionType.Variable:
-            if (matches != false) {
-              matches = null;
-            }
+            UnMatch($"Unknown variable {x} matchd with unknown variable {y}");
             return;
+        }
+      }
+
+      void NoMatch(string r) {
+        matches = false;
+        if (reason == null) {
+          reason = r;
+        }
+      }
+
+      void UnMatch(string r) {
+        if (matches != false) {
+          matches = null;
+        }
+        if (unReason == null) {
+          unReason = r;
         }
       }
 
       void SetOrAdd(char name, string digits) {
         if (Env.TryGetValue(name, out var value)) {
           if (value != digits) {
-            matches = false;
+            NoMatch($"Variable {name} was already {value} and cannot be {digits}");
           }
         } else {
           Env.Add(name, digits);
@@ -360,5 +392,7 @@ namespace Engine
   {
     public static string TrailingNewline(this string s) =>
         s.EndsWith(System.Environment.NewLine) ? s : s + System.Environment.NewLine;
+
+    public static string GetName<T>(this T e) where T : struct => Enum.GetName(typeof(T), e);
   }
 }

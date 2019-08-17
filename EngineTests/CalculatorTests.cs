@@ -152,6 +152,53 @@ a + b = c
 1+2"));
     }
 
+    [TestMethod]
+    public void TestExplainedNegative() {
+      Assert.AreEqual(@"3
+    Solving 1 + 2...
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3
+    | a + 1 = x Implies x = 2
+        Solving 1 + 1 = |
+        Applied rule 1 + 1 = 2
+        Rules that didn't help:
+            Rule a = a didn't help because 1 + 1 is Func but a is Variable
+            Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
+            Rule a + b = c didn't help because a + 1 is Func but x is Variable
+            Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
+    | y + 1 = b Implies y = 1
+        Solving  + 1 = 2
+        Applied rule 1 + 1 = 2
+        Rules that didn't help:
+            Rule a = a didn't help because  + 1 is Func but a is Variable
+            Rule 2 + 1 = 3 didn't help because Digit 2 is not 3
+            Rule a + b = c didn't help because y + 1 is Func but b is Variable
+            Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
+    | x + y = c Implies c = 3
+        Solving 2 + 1 = ¤
+        Applied rule 2 + 1 = 3
+        Rules that didn't help:
+            Rule a = a didn't help because 2 + 1 is Func but a is Variable
+            Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
+            Rule a + b = c didn't help because a + 1 is Func but x is Variable
+            Rule 1 + 2 = 3 didn't help because Digit 2 is not 1
+    Redundant rule 1 + 2 = 3
+    Rules that didn't help:
+        Rule a = a didn't help because 1 + 2 is Func but a is Variable
+        Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
+        Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
+", EvaluateExplained(@"1 + 1 = 2
+2 + 1 = 3
+
+a + b = c
+| a + 1 = x
+| y + 1 = b
+| x + y = c
+
+1 + 2 = 3
+
+1+2", true));
+    }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
     static string Evaluate(string input) {
@@ -160,21 +207,24 @@ a + b = c
       return string.Join(Environment.NewLine, eval.Results.Select(r => r.Line));
     }
 
-    static string EvaluateExplained(string input) {
+    static string EvaluateExplained(string input, bool explainNegative = false) {
       var eval = GetEvaluation(input);
       Assert.IsFalse(eval.Error);
 
       var builder = new StringBuilder();
       foreach (var r in eval.Results) {
-        Print(r, 0, builder);
+        Print(r, 0, builder, explainNegative);
       }
       return builder.ToString();
     }
 
-    static void Print(Result result, int indent, StringBuilder builder) {
+    static void Print(Result result, int indent, StringBuilder builder, bool explainNegative) {
+      if (!explainNegative && result.Line == "Rules that didn't help:") {
+        return;
+      }
       builder.AppendLine(new string(' ', indent) + result.Line);
       foreach (var c in result.Children) {
-        Print(c, indent + 4, builder);
+        Print(c, indent + 4, builder, explainNegative);
       }
     }
 
