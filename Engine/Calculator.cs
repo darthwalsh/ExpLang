@@ -246,15 +246,6 @@ namespace Engine
           }
         }
 
-        // TODO TODO TODO BUG!
-        /*
-           This program goes into an infinite loop....
-            7&7 = a
-            | a + a = 3
-
-            7&7
-        */
-
         var where = toResolve[minI];
         toResolve.RemoveAt(minI);
 
@@ -265,11 +256,11 @@ namespace Engine
         if (calc.TryResolveFact((Func)replaced, out var resolvedEnv, out var result)) {
           Solution.Add((where, result));
 
-          foreach (var kvp in resolvedEnv) {
+          foreach (var (key, value) in resolvedEnv) {
             // Only try to set variable we've introduce into the fact
             // TODO add some tests around this
-            if (backMap.TryGetValue(kvp.Key, out var actualVar)) {
-              SetOrAdd(actualVar.Value, kvp.Value);
+            if (backMap.TryGetValue(key, out var actualVar)) {
+              SetOrAdd(actualVar.Value, value);
             }
           }
           return;
