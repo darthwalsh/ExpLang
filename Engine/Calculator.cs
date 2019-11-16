@@ -79,6 +79,7 @@ namespace Engine
           results.Add(result);
         } else {
           Error = true;
+          // TODO should display negative reasoning
           results.Add(new Result($"Error! Can't evaluate '{e}'"));
         }
       }

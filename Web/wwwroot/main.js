@@ -22,10 +22,15 @@ function triangleClick(e) {
 
 function addResult(e, result, indent) {
   const explainChecked = $("explain").checked;
+  const exhaustive = result.line === "Rules that didn't help:";
+  
   let triangle = null;
   if (result.children.length) {
     triangle = document.createElement("pre");
     triangle.className = "triangle";
+    if (exhaustive) {
+      triangle.className += " exhaustive";
+   }
     triangle.style.marginLeft = indent * 4 + "ch";
     triangle.textContent = expanded;
     triangle.onclick = triangleClick;
@@ -35,10 +40,16 @@ function addResult(e, result, indent) {
   const line = document.createElement("pre");
   line.textContent = result.line;
   line.style.marginLeft = 1 + indent * 4 + "ch";
+  if (exhaustive) {
+    line.className = "exhaustive";
+  }
   e.appendChild(line);
 
   if (result.children.length) {
     const div = document.createElement("div");
+    if (exhaustive) {
+      div.className = "exhaustive";
+    }
     result.children.forEach(r => addResult(div, r, indent + 1));
     e.appendChild(div);
   
@@ -80,6 +91,12 @@ window.onload = () => {
   }
   if (localStorage.getItem("explain")) {
     $("explain").checked = true;
+    $("exhaustiveSpan").style.display = "";
+  }
+  const exhaustiveRule = [...document.styleSheets[0].cssRules].filter(r => r.selectorText === ".exhaustive")[0];
+  if (localStorage.getItem("exhaustive")) {
+    $("exhaustive").checked = true;
+    exhaustiveRule.style.display = "";
   }
     
   $("explain").addEventListener("click", () => {
@@ -91,6 +108,15 @@ window.onload = () => {
         triangleClick({ target: triangle });
       }
     });
+
+    $("exhaustiveSpan").style.display = checked ? "" : "none";
+  });
+
+  $("exhaustive").addEventListener("click", () => {
+    const checked = $("exhaustive").checked;
+    localStorage.setItem("exhaustive", checked ? "true" : "");
+
+    exhaustiveRule.style.display = checked ? "" : "none";
   });
 
   $("input").addEventListener("input", () =>
