@@ -417,14 +417,14 @@ namespace Engine
     }
   }
 
-  public class Evalutation
+  public class Evaluation
   {
     public IEnumerable<Result> Results { get; set; }
     public bool Error { get; set; }
 
-    public Evalutation() { }
+    public Evaluation() { }
 
-    public Evalutation(string input) {
+    public Evaluation(string input) {
       var expression = ExprExtractor.GetExpression(input);
 
       var calc = new Calculator(expression);

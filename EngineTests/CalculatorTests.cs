@@ -303,6 +303,6 @@ a + b = c
     }
 
     static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
-    static Evalutation GetEvaluation(string input) => new Evalutation(splitLines.Replace(input, Environment.NewLine));
+    static Evaluation GetEvaluation(string input) => new Evaluation(splitLines.Replace(input, Environment.NewLine));
   }
 }

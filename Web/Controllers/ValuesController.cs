@@ -10,12 +10,11 @@ namespace Web.Controllers
   {
     // POST values
     [HttpPost]
-    public ActionResult<Evalutation> Post([FromBody] Input value) {
+    public ActionResult<Evaluation> Post([FromBody] Input value) {
       try {
-        var eval = new Evalutation(value.text);
-        return eval;
+        return new Evaluation(value.text);
       } catch (Exception e) {
-        return new Evalutation {
+        return new Evaluation {
           Results = new[] { new Result(e.ToString()) },
           Error = true
         };
