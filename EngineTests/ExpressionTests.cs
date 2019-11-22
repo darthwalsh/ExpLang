@@ -14,6 +14,7 @@ namespace EngineTests
 
     static readonly Expression[] kinds = new[] {
             Parse("a"),
+            Parse("A"),
             Parse("0"),
             Parse("a0"),
             Parse("0a"),

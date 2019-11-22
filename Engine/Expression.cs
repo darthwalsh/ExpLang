@@ -26,7 +26,7 @@ namespace Engine
     public abstract IEnumerable<Expression> Children { get; }
 
     // Variables are normalized before finding hash or equality, so a+b=b*0 is the same as x+y=y*0
-    Expression NormalizeVariables() => new VariableRewriter { Uniq = new UniqVariable() }.Visit(this);
+    Expression NormalizeVariables() => new VariableRewriter(new SimpleReplacer()).Visit(this);
     public override bool Equals(object obj) => Equals(obj as Expression);
     public bool Equals(Expression other) {
       if (other == null) {
@@ -54,6 +54,15 @@ namespace Engine
     {
       public bool Equals(Expression x, Expression y) => x.SimpleEquals(y);
       public int GetHashCode(Expression obj) => obj.SimpleHash();
+    }
+
+    class SimpleReplacer : IVariableReplacement
+    {
+      // If variable names could be strings, doing something like $0, $1 would be simpler...
+      char lower = 'a';
+      char upper = 'A';
+
+      public char Next(char replace) => char.IsUpper(replace) ? upper++ : lower++;
     }
   }
 
@@ -146,23 +155,25 @@ namespace Engine
 
   class VariableRewriter : ExpressionVisitor
   {
-    public UniqVariable Uniq { get; set; }
+    readonly IVariableReplacement replacer;
+
+    public VariableRewriter(IVariableReplacement replacer) {
+      this.replacer = replacer;
+    }
 
     public Dictionary<char, char> Rewrites { get; private set; } = new Dictionary<char, char>();
 
     protected override Character VisitVariable(Character e) {
       if (!Rewrites.TryGetValue(e.Value, out var rewrite)) {
-        rewrite = Uniq.Next;
+        rewrite = replacer.Next(e.Value);
         Rewrites.Add(e.Value, rewrite);
       }
       return new Character(rewrite);
     }
   }
 
-  class UniqVariable
+  interface IVariableReplacement
   {
-    // If variable names could be strings, doing something like $0, $1 would be simpler...
-    char c = (char)Math.Max('z', 'Z');
-    public char Next => ++c;
+    char Next(char replace);
   }
 }

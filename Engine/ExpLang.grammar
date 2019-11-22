@@ -11,7 +11,7 @@ PIPE = "|"
 COLON = ":"
 OP = <<[!%&*+\-/<>^~]>>
 DIGIT = <<[0-9]>>
-VARIABLE = <<[a-z]>>
+VARIABLE = <<[a-zA-Z]>>
 NEWLINE = <<\r?\n>>
 SPACE = " " %ignore%
 

@@ -111,7 +111,7 @@ a + b = c
     }
 
     [TestMethod]
-    public void MultipathAddtion() {
+    public void MultipathAddition() {
       Assert.AreEqual(@"3", Evaluate(@"1 + 1 = 2
 2 + 1 = 3
 1 + 2 = 3
@@ -127,17 +127,17 @@ a + b = c
     [TestMethod]
     public void TestExplained() {
       Assert.AreEqual(@"3
-    Solving 1 + 2 = {
-    Applied rule a + b = c Implies a = 1, b = 2, c = 3, { = 3
+    Solving 1 + 2 = X
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3, X = 3
     | a + 1 = x Implies x = 2
-        Solving 1 + 1 = |
-        Applied rule 1 + 1 = 2 Implies | = 2
+        Solving 1 + 1 = x
+        Applied rule 1 + 1 = 2 Implies x = 2
     | y + 1 = b Implies y = 1
-        Solving  + 1 = 2
-        Applied rule 1 + 1 = 2 Implies  = 1
+        Solving y + 1 = 2
+        Applied rule 1 + 1 = 2 Implies y = 1
     | x + y = c Implies c = 3
-        Solving 2 + 1 = ¤
-        Applied rule 2 + 1 = 3 Implies ¤ = 3
+        Solving 2 + 1 = c
+        Applied rule 2 + 1 = 3 Implies c = 3
     Redundant rule 1 + 2 = 3
 ", EvaluateExplained(@"1 + 1 = 2
 2 + 1 = 3
@@ -155,27 +155,27 @@ a + b = c
     [TestMethod]
     public void TestExplainedExhaustive() {
       Assert.AreEqual(@"3
-    Solving 1 + 2 = {
-    Applied rule a + b = c Implies a = 1, b = 2, c = 3, { = 3
+    Solving 1 + 2 = X
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3, X = 3
     | a + 1 = x Implies x = 2
-        Solving 1 + 1 = |
-        Applied rule 1 + 1 = 2 Implies | = 2
+        Solving 1 + 1 = x
+        Applied rule 1 + 1 = 2 Implies x = 2
         Rules that didn't help:
             Rule a = a didn't help because 1 + 1 is Func but a is Variable
             Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
-            Rule a + b = c didn't help because a + 1 is Func but x is Variable
+            Rule a + b = c didn't help because a + 1 is Func but d is Variable
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
     | y + 1 = b Implies y = 1
-        Solving  + 1 = 2
-        Applied rule 1 + 1 = 2 Implies  = 1
+        Solving y + 1 = 2
+        Applied rule 1 + 1 = 2 Implies y = 1
         Rules that didn't help:
-            Rule a = a didn't help because  + 1 is Func but a is Variable
+            Rule a = a didn't help because y + 1 is Func but a is Variable
             Rule 2 + 1 = 3 didn't help because Digit 2 is not 3
-            Rule a + b = c didn't help because y + 1 is Func but b is Variable
+            Rule a + b = c didn't help because d + 1 is Func but b is Variable
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
     | x + y = c Implies c = 3
-        Solving 2 + 1 = ¤
-        Applied rule 2 + 1 = 3 Implies ¤ = 3
+        Solving 2 + 1 = c
+        Applied rule 2 + 1 = 3 Implies c = 3
         Rules that didn't help:
             Rule a = a didn't help because 2 + 1 is Func but a is Variable
             Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
@@ -204,16 +204,16 @@ a + b = c
     [TestMethod]
     public void TestExplainedExhaustiveDiffering() {
       Assert.AreEqual(@"4
-    Solving 2 ^ 2 = {
-    Applied rule 2 ^ 2 = c Implies c = 4, { = 4
+    Solving 2 ^ 2 = X
+    Applied rule 2 ^ 2 = c Implies c = 4, X = 4
     | c = 4 Implies c = 4
-        Solving } = 4
-        Applied rule a = a Implies a = 4, } = 4
+        Solving c = 4
+        Applied rule a = a Implies a = 4, c = 4
         Rules that didn't help:
-            Rule 1 + 1 = 2 didn't help because } is Variable but 1 + 1 is Func
-            Rule 1 + 1 = 3 didn't help because } is Variable but 1 + 1 is Func
-            Rule 2 ^ 2 = c didn't help because } is Variable but 2 ^ 2 is Func
-            Rule 2 ^ 2 = c didn't help because } is Variable but 2 ^ 2 is Func
+            Rule 1 + 1 = 2 didn't help because c is Variable but 1 + 1 is Func
+            Rule 1 + 1 = 3 didn't help because c is Variable but 1 + 1 is Func
+            Rule 2 ^ 2 = c didn't help because c is Variable but 2 ^ 2 is Func
+            Rule 2 ^ 2 = c didn't help because c is Variable but 2 ^ 2 is Func
     Rules that didn't help:
         Rule a = a didn't help because 2 ^ 2 is Func but a is Variable
         Rule 1 + 1 = 2 didn't help because 2 ^ 2 is function ^ but 1 + 1 is function +
@@ -248,18 +248,39 @@ a + b = c
 
       Assert.AreEqual(@"Error! Can't evaluate '1 + 1'
     Rules that didn't help:
-        Solving 1 + 1 = { got Different results produced for variable {
-            Found {=2
-                Solving 1 + 1 = {
-                Applied rule 1 + 1 = 2 Implies { = 2
-            Found {=3
-                Solving 1 + 1 = {
-                Applied rule 1 + 1 = 3 Implies { = 3
-        Solving { = 1 + 1 got Rules that didn't help:
+        Solving 1 + 1 = X got Different results produced for variable X
+            Found X=2
+                Solving 1 + 1 = X
+                Applied rule 1 + 1 = 2 Implies X = 2
+            Found X=3
+                Solving 1 + 1 = X
+                Applied rule 1 + 1 = 3 Implies X = 3
+        Solving X = 1 + 1 got Rules that didn't help:
             Rule a = a didn't help because 1 + 1 is Func but a is Variable
-            Rule 1 + 1 = 2 didn't help because { is Variable but 1 + 1 is Func
-            Rule 1 + 1 = 3 didn't help because { is Variable but 1 + 1 is Func
+            Rule 1 + 1 = 2 didn't help because X is Variable but 1 + 1 is Func
+            Rule 1 + 1 = 3 didn't help because X is Variable but 1 + 1 is Func
 ", actual);
+    }
+
+    [TestMethod]
+    public void TestVariableReplace() {
+      // Rewrites rule's c to a, and a to b
+      // TODO Why is c getting printed twice?
+      // TODO probably better to rewrite c to b and leave a alone.
+      Assert.AreEqual(@"3
+    Solving 1 + c = X
+    Applied rule 1 + 2 = c Implies c = 2, c = 2, X = 3
+    | a = 3 Implies a = 3
+        Solving a = 3
+        Applied rule a = a Implies a = 3, a = 3
+    | b = 2 Implies b = 2
+        Solving b = 2
+        Applied rule a = a Implies a = 2, b = 2
+", EvaluateExplained(@"1 + 2 = c
+| c = 3
+| a = 2
+
+1 + c"));
     }
 
 #pragma warning restore IDE0022 // Use expression body for methods

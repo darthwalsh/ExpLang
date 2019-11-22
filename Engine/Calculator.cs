@@ -14,7 +14,6 @@ namespace Engine
     readonly List<Fact> facts = new List<Fact>(axioms);
     readonly List<Expression> expressions = new List<Expression>();
     readonly List<Result> results = new List<Result>();
-    readonly UniqVariable uniq = new UniqVariable();
 
     // MAYBE Have a Dictionary<Expression, Env> that also works as a cache, so evaluations aren't repeated
     readonly Dictionary<Expression, bool> recursionCheck = new Dictionary<Expression, bool>();
@@ -68,7 +67,7 @@ namespace Engine
     public void Evaluate() {
       foreach (var e in expressions) {
         // e = X, solve for X
-        var next = uniq.Next;
+        var next = new UniqVariable(e).Next('X');
         var temp = new Func("=", e, new Character(next));
         if (TryResolveFact(temp, out var env, out var result) && env.TryGetValue(next, out var value)) {
           // TODO decide if this logic could be avoided if top-level expressions didn't solve for X
@@ -136,7 +135,7 @@ namespace Engine
       result = null;
       var failures = new Result("Rules that didn't help:");
       foreach (var fact in facts) {
-        var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
+        var matcher = new Matcher(test, fact, this);
         if (matcher.Matches) {
           if (env != null) {
             if (!EnvironmentEqual(test, env, matcher.Env, out var diff)) {
@@ -197,23 +196,12 @@ namespace Engine
     }
 
     // Only check variables in test, ignoring variables that might have been defined in fact
-    // TODO test for rewrite needed?
-    Expression RewriteVariables(Expression e, out Dictionary<char, Character> backMap) {
-      var rewriter = new VariableRewriter {
-        Uniq = uniq
-      };
-      var expression = rewriter.Visit(e);
-      backMap = rewriter.Rewrites.ToDictionary(kvp => kvp.Value, kvp => new Character(kvp.Key));
-      return expression;
-    }
-
     static bool EnvironmentEqual(Func test, Environment x, Environment y, out char diff) {
       diff = VariableFinder.Find(test).FirstOrDefault(c =>
         x.TryGetValue(c, out var xv) && y.TryGetValue(c, out var yv) && xv != yv);
       return diff == default;
     }
 
-    // TODO test for inline needed?
     class VariableInliner : ExpressionVisitor
     {
       public Environment Env { get; set; }
@@ -222,7 +210,7 @@ namespace Engine
           Env.TryGetValue(e.Value, out var value) ? new Character(value.Single()) : e;
     }
 
-    class VariableFinder : ExpressionVisitor
+    internal class VariableFinder : ExpressionVisitor
     {
       readonly List<char> vars = new List<char>();
       readonly HashSet<char> seen = new HashSet<char>();
@@ -249,16 +237,23 @@ namespace Engine
       string unReason;
       public readonly List<(Expression, Result)> Solution = new List<(Expression, Result)>();
 
-      public Matcher(Expression x, Expression y, IEnumerable<Func> wheres, Calculator calc) {
+      public Matcher(Expression test, Fact fact, Calculator calc) {
         if (calc.matcherRecursiveCalls++ > max_recursion) {
           throw new StackOverflowException("Recursion too deep"); // doesn't actually crash the .NET VM
         }
+
+        // Fact might contain the same variables as test, so rewrite fact as needed
+        // TODO include the rewrites in the Results output
+        fact = (Fact)new VariableRewriter(new UniqVariable(test)).Visit(fact);
+
+        Expression equality = fact.Equality;
+        IEnumerable<Func> wheres = fact.Wheres;
 
         try {
           this.calc = calc;
 
           // Do a pretest to try to assign as many variables as possible first, then check Solve() again later
-          Solve(x, y);
+          Solve(test, equality);
           if (matches.HasValue && !matches.Value) {
             return;
           }
@@ -271,7 +266,7 @@ namespace Engine
             HandleWhere(toResolve);
           }
 
-          Solve(x, y);
+          Solve(test, equality);
         } finally {
           calc.matcherRecursiveCalls--;
         }
@@ -300,15 +295,13 @@ namespace Engine
         var inlined = new VariableInliner {
           Env = Env
         }.Visit(where);
-        var replaced = calc.RewriteVariables(inlined, out var backMap); // MAYBE is this needed? It's really ugly in the explanation
-        if (calc.TryResolveFact((Func)replaced, out var resolvedEnv, out var result)) {
+        if (calc.TryResolveFact((Func)inlined, out var resolvedEnv, out var result)) {
           Solution.Add((where, result));
 
+          var expectedVars = VariableFinder.Find(inlined);
           foreach (var (key, value) in resolvedEnv) {
-            // Only try to set variable we've introduce into the fact
-            // TODO add some tests around this
-            if (backMap.TryGetValue(key, out var actualVar)) {
-              SetOrAdd(actualVar.Value, value);
+            if (expectedVars.Contains(key)) {
+              SetOrAdd(key, value);
             }
           }
           return;
@@ -448,5 +441,45 @@ namespace Engine
         s.EndsWith(System.Environment.NewLine) ? s : s + System.Environment.NewLine;
 
     public static string GetName<T>(this T e) where T : struct => Enum.GetName(typeof(T), e);
+  }
+
+  // Useful for producing unique variables that don't conflict with the input expression.
+  // Maintains the case of the output variables to match input.
+  public class UniqVariable : IVariableReplacement
+  {
+    readonly HashSet<char> used;
+    char upper = 'A';
+    char lower = 'a';
+
+    public UniqVariable(Expression e) {
+      used = new HashSet<char>(Calculator.VariableFinder.Find(e));
+    }
+
+    public char Next(char replacing) {
+      if (used.Add(replacing)) {
+        return replacing;
+      }
+
+      if (char.IsUpper(replacing)) {
+        while (used.Contains(upper)) { ++upper; }
+        if (upper > 'Z') {
+          throw new InvalidOperationException("Too many vars");
+        }
+
+        var res = upper;
+        used.Add(upper);
+        ++upper;
+        return res;
+      }
+      while (used.Contains(lower)) { ++lower; }
+      if (lower > 'z') {
+        throw new InvalidOperationException("Too many vars");
+      }
+
+      var ans = lower;
+      used.Add(lower);
+      ++lower;
+      return ans;
+    }
   }
 }
