@@ -31,9 +31,10 @@ namespace EngineTests
       for (var i = 0; i < kinds.Length; ++i) {
         for (var j = 0; j < kinds.Length; j++) {
           if (i == j) {
-            continue;
+            Assert.AreEqual(kinds[i].GetHashCode(), kinds[j].GetHashCode(), $"{i}=={j}");
+          } else {
+            Assert.AreNotEqual(kinds[i].GetHashCode(), kinds[j].GetHashCode(), $"{i}!={j}");
           }
-          Assert.AreNotEqual(kinds[i].GetHashCode(), kinds[j].GetHashCode(), $"{i}=={j}");
         }
       }
     }
