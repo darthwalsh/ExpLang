@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Environment = System.Collections.Generic.Dictionary<char, string>;
@@ -70,17 +71,18 @@ namespace Engine
         var next = uniq.Next;
         var temp = new Func("=", e, new Character(next));
         if (TryResolveFact(temp, out var env, out var result) && env.TryGetValue(next, out var value)) {
-          if (result.Children.Count > 0) {
-            // MAYBE this logic could be avoided if top-level expressions didn't do the next weirdness
-            var solving = result.Children[0].Line;
-            result.Children[0].Line = solving.Substring(0, solving.Length - 4) + "...";
-          }
+          // TODO decide if this logic could be avoided if top-level expressions didn't solve for X
+          //  if (result.Children.Count > 0) {
+          //  var solving = result.Children[0].Line;
+          //  result.Children[0].Line = solving.Substring(0, solving.Length - 4) + "...";
+          //}
           result.Line = value;
           results.Add(result);
         } else {
           Error = true;
-          // TODO should display negative reasoning
-          results.Add(new Result($"Error! Can't evaluate '{e}'"));
+          var failureMessage = new Result($"Error! Can't evaluate '{e}'");
+          failureMessage.Children.Add(result);
+          results.Add(failureMessage);
         }
       }
     }
@@ -94,9 +96,25 @@ namespace Engine
       }
       recursionCheck[test] = false;
 
-      // Equality is implicitly reflexive, even though other ops aren't
-      // MAYBE there could be an implicit rule A = B |B = A that allow for reflecting and solving?
-      var success = TryResolveFactImpl(test, out env, out result) || TryResolveFactImpl(new Func(test.Name, test.Right, test.Left), out env, out result);
+      // Equality is implicitly symmetric, even though other ops aren't
+      // MAYBE there could be an implicit rule A = B |B = A that allow for symmetry and solving?
+      //   (Assuming there is a variable B that can contain function expressions)
+      var success = TryResolveFactImpl(test, out env, out result);
+      if (!success) {
+        var testReverse = new Func(test.Name, test.Right, test.Left);
+        success = TryResolveFactImpl(testReverse, out env, out var resultReverse);
+        if (success) {
+          result = resultReverse;
+        } else {
+          result.Line = $"Solving {test} got {result.Line}";
+          resultReverse.Line = $"Solving {testReverse} got {resultReverse.Line}";
+          
+          var bothResult = new Result("Rules that didn't help:");
+          bothResult.Children.Add(result);
+          bothResult.Children.Add(resultReverse);
+          result = bothResult;
+        }
+      }
 
       recursionCheck[test] = true;
       return success;
@@ -121,7 +139,16 @@ namespace Engine
         var matcher = new Matcher(test, fact.Equality, fact.Wheres, this);
         if (matcher.Matches) {
           if (env != null) {
-            if (!EnvironmentEqual(test, env, matcher.Env)) {
+            if (!EnvironmentEqual(test, env, matcher.Env, out var diff)) {
+              var diffResult = new Result($"Different results produced for variable {diff}");
+              result.Line = $"Found {diff}={env[diff]}";
+
+              var otherResult = GetResult(test, fact, matcher);
+              otherResult.Line = $"Found {diff}={matcher.Env[diff]}";
+
+              diffResult.Children.Add(result);
+              diffResult.Children.Add(otherResult);
+              result = diffResult;
               return false;
             } else {
               result.Children.Add(new Result($"Redundant rule {fact.Equality}"));
@@ -129,27 +156,7 @@ namespace Engine
             }
           }
           env = matcher.Env;
-
-          result = new Result("");
-          result.Children.Add(new Result($"Solving {test}"));
-
-          var factVars = VariableFinder.Find(fact.Equality);
-          var implies = string.Join(", ", factVars.Select(v => $"{v} = {matcher.Env[v]}"));
-          var line = $"Applied rule {fact.Equality}";
-          if (factVars.Any()) {
-            line += $" Implies {implies}";
-          }
-          result.Children.Add(new Result(line));
-
-          var defined = new HashSet<char>(matcher.InitialEnv.Keys);
-          foreach (var (where, r) in matcher.Solution) {
-            var whereVars = VariableFinder.Find(where);
-            var defs = string.Join(", ", whereVars.Where(defined.Add).Select(v => $"{v} = {matcher.Env[v]}"));
-
-            r.Line = $"| {where} {(defs.Any() ? "Implies " + defs : "")}";
-            result.Children.Add(r);
-          }
-          
+          result = GetResult(test, fact, matcher);
           // Don't return true until end of loop, to ensure there aren't different results between rules
         } else {
           failures.Children.Add(new Result($"Rule {fact.Equality} didn't help because {matcher.Reason}"));
@@ -165,10 +172,31 @@ namespace Engine
       return env != null;
     }
 
-    // Only check variables in test, ignoring variables that might have been defined in fact
-    static bool EnvironmentEqual(Func test, Environment x, Environment y) => VariableFinder.Find(test).All(c =>
-      x.TryGetValue(c, out var xv) && y.TryGetValue(c, out var yv) && xv == yv);
+    static Result GetResult(Func test, Fact fact, Matcher matcher) {
+      var result = new Result("");
+      result.Children.Add(new Result($"Solving {test}"));
 
+      var factVars = VariableFinder.Find(fact.Equality).Concat(VariableFinder.Find(test)).ToList();
+      var implies = string.Join(", ", factVars.Select(v => $"{v} = {matcher.Env[v]}"));
+      var line = $"Applied rule {fact.Equality}";
+      if (factVars.Any()) {
+        line += $" Implies {implies}";
+      }
+      result.Children.Add(new Result(line));
+
+      var defined = new HashSet<char>(matcher.InitialEnv.Keys);
+      foreach (var (where, r) in matcher.Solution) {
+        var whereVars = VariableFinder.Find(where);
+        var defs = string.Join(", ", whereVars.Where(defined.Add).Select(v => $"{v} = {matcher.Env[v]}"));
+
+        r.Line = $"| {where} {(defs.Any() ? "Implies " + defs : "")}";
+        result.Children.Add(r);
+      }
+
+      return result;
+    }
+
+    // Only check variables in test, ignoring variables that might have been defined in fact
     // TODO test for rewrite needed?
     Expression RewriteVariables(Expression e, out Dictionary<char, Character> backMap) {
       var rewriter = new VariableRewriter {
@@ -177,6 +205,12 @@ namespace Engine
       var expression = rewriter.Visit(e);
       backMap = rewriter.Rewrites.ToDictionary(kvp => kvp.Value, kvp => new Character(kvp.Key));
       return expression;
+    }
+
+    static bool EnvironmentEqual(Func test, Environment x, Environment y, out char diff) {
+      diff = VariableFinder.Find(test).FirstOrDefault(c =>
+        x.TryGetValue(c, out var xv) && y.TryGetValue(c, out var yv) && xv != yv);
+      return diff == default;
     }
 
     // TODO test for inline needed?
@@ -280,6 +314,7 @@ namespace Engine
           return;
         }
 
+        // TODO the error resul should get returned somehow
         Solve(where.Left, where.Right);
       }
 
@@ -322,7 +357,7 @@ namespace Engine
             }
             break;
           case ExpressionType.Variable:
-            UnMatch($"Unknown variable {x} matchd with unknown variable {y}");
+            UnMatch($"Unknown variable {x} matched with unknown variable {y}");
             return;
         }
       }
@@ -360,8 +395,10 @@ namespace Engine
     }
   }
 
+  [DebuggerDisplay("{ToString(true),nq}")]
   public class Result
   {
+    // MAYBE remove setter, add varargs in ctor
     public List<Result> Children { get; set; } = new List<Result>();
     public string Line { get; set; }
     public Result(string line) {
@@ -369,6 +406,22 @@ namespace Engine
     }
 
     public override string ToString() => Line + (Children.Any() ? "..." : "");
+
+    public string ToString(bool explainNegative) {      
+      var builder = new StringBuilder();
+      Print(this, 0, builder, explainNegative);
+      return builder.ToString();
+    }
+
+    public static void Print(Result result, int indent, StringBuilder builder, bool exhaustive) {
+      if (!exhaustive && result.Line == "Rules that didn't help:") {
+        return;
+      }
+      builder.AppendLine(new string(' ', indent) + result.Line);
+      foreach (var c in result.Children) {
+        Print(c, indent + 4, builder, exhaustive);
+      }
+    }
   }
 
   public class Evalutation

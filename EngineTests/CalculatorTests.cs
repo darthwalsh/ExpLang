@@ -127,17 +127,17 @@ a + b = c
     [TestMethod]
     public void TestExplained() {
       Assert.AreEqual(@"3
-    Solving 1 + 2...
-    Applied rule a + b = c Implies a = 1, b = 2, c = 3
+    Solving 1 + 2 = {
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3, { = 3
     | a + 1 = x Implies x = 2
         Solving 1 + 1 = |
-        Applied rule 1 + 1 = 2
+        Applied rule 1 + 1 = 2 Implies | = 2
     | y + 1 = b Implies y = 1
         Solving  + 1 = 2
-        Applied rule 1 + 1 = 2
+        Applied rule 1 + 1 = 2 Implies  = 1
     | x + y = c Implies c = 3
         Solving 2 + 1 = ¤
-        Applied rule 2 + 1 = 3
+        Applied rule 2 + 1 = 3 Implies ¤ = 3
     Redundant rule 1 + 2 = 3
 ", EvaluateExplained(@"1 + 1 = 2
 2 + 1 = 3
@@ -153,13 +153,13 @@ a + b = c
     }
 
     [TestMethod]
-    public void TestExplainedNegative() {
+    public void TestExplainedExhaustive() {
       Assert.AreEqual(@"3
-    Solving 1 + 2...
-    Applied rule a + b = c Implies a = 1, b = 2, c = 3
+    Solving 1 + 2 = {
+    Applied rule a + b = c Implies a = 1, b = 2, c = 3, { = 3
     | a + 1 = x Implies x = 2
         Solving 1 + 1 = |
-        Applied rule 1 + 1 = 2
+        Applied rule 1 + 1 = 2 Implies | = 2
         Rules that didn't help:
             Rule a = a didn't help because 1 + 1 is Func but a is Variable
             Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
@@ -167,7 +167,7 @@ a + b = c
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
     | y + 1 = b Implies y = 1
         Solving  + 1 = 2
-        Applied rule 1 + 1 = 2
+        Applied rule 1 + 1 = 2 Implies  = 1
         Rules that didn't help:
             Rule a = a didn't help because  + 1 is Func but a is Variable
             Rule 2 + 1 = 3 didn't help because Digit 2 is not 3
@@ -175,7 +175,7 @@ a + b = c
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
     | x + y = c Implies c = 3
         Solving 2 + 1 = ¤
-        Applied rule 2 + 1 = 3
+        Applied rule 2 + 1 = 3 Implies ¤ = 3
         Rules that didn't help:
             Rule a = a didn't help because 2 + 1 is Func but a is Variable
             Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
@@ -199,6 +199,69 @@ a + b = c
 1+2", true));
     }
 
+    // TODO should have the =2 =3 result language of TestExplainedExhaustiveDifferingError
+    [Ignore]
+    [TestMethod]
+    public void TestExplainedExhaustiveDiffering() {
+      Assert.AreEqual(@"4
+    Solving 2 ^ 2 = {
+    Applied rule 2 ^ 2 = c Implies c = 4, { = 4
+    | c = 4 Implies c = 4
+        Solving } = 4
+        Applied rule a = a Implies a = 4, } = 4
+        Rules that didn't help:
+            Rule 1 + 1 = 2 didn't help because } is Variable but 1 + 1 is Func
+            Rule 1 + 1 = 3 didn't help because } is Variable but 1 + 1 is Func
+            Rule 2 ^ 2 = c didn't help because } is Variable but 2 ^ 2 is Func
+            Rule 2 ^ 2 = c didn't help because } is Variable but 2 ^ 2 is Func
+    Rules that didn't help:
+        Rule a = a didn't help because 2 ^ 2 is Func but a is Variable
+        Rule 1 + 1 = 2 didn't help because 2 ^ 2 is function ^ but 1 + 1 is function +
+        Rule 1 + 1 = 3 didn't help because 2 ^ 2 is function ^ but 1 + 1 is function +
+        Rule 2 ^ 2 = c didn't help because 1 + 1 is Func but c is Variable
+", EvaluateExplained(@"1 + 1 = 2
+1 + 1 = 3
+
+2 ^ 2 = c
+| 1 + 1 = c
+
+2 ^ 2 = c
+| c = 4
+
+2 ^ 2", true));
+    }
+
+    [TestMethod]
+    public void TestExplainedExhaustiveDifferingError() {
+      var input = @"1 + 1 = 2
+1 + 1 = 3
+
+1 + 1";
+      var eval = GetEvaluation(input);
+      Assert.IsTrue(eval.Error);
+
+      var builder = new StringBuilder();
+      foreach (var r in eval.Results) {
+        Result.Print(r, 0, builder, true);
+      }
+      var actual = builder.ToString();
+
+      Assert.AreEqual(@"Error! Can't evaluate '1 + 1'
+    Rules that didn't help:
+        Solving 1 + 1 = { got Different results produced for variable {
+            Found {=2
+                Solving 1 + 1 = {
+                Applied rule 1 + 1 = 2 Implies { = 2
+            Found {=3
+                Solving 1 + 1 = {
+                Applied rule 1 + 1 = 3 Implies { = 3
+        Solving { = 1 + 1 got Rules that didn't help:
+            Rule a = a didn't help because 1 + 1 is Func but a is Variable
+            Rule 1 + 1 = 2 didn't help because { is Variable but 1 + 1 is Func
+            Rule 1 + 1 = 3 didn't help because { is Variable but 1 + 1 is Func
+", actual);
+    }
+
 #pragma warning restore IDE0022 // Use expression body for methods
 
     static string Evaluate(string input) {
@@ -207,25 +270,15 @@ a + b = c
       return string.Join(Environment.NewLine, eval.Results.Select(r => r.Line));
     }
 
-    static string EvaluateExplained(string input, bool explainNegative = false) {
+    static string EvaluateExplained(string input, bool exhaustive = false) {
       var eval = GetEvaluation(input);
       Assert.IsFalse(eval.Error);
 
       var builder = new StringBuilder();
       foreach (var r in eval.Results) {
-        Print(r, 0, builder, explainNegative);
+        Result.Print(r, 0, builder, exhaustive);
       }
       return builder.ToString();
-    }
-
-    static void Print(Result result, int indent, StringBuilder builder, bool explainNegative) {
-      if (!explainNegative && result.Line == "Rules that didn't help:") {
-        return;
-      }
-      builder.AppendLine(new string(' ', indent) + result.Line);
-      foreach (var c in result.Children) {
-        Print(c, indent + 4, builder, explainNegative);
-      }
     }
 
     static readonly Regex splitLines = new Regex("; *", RegexOptions.Compiled);
