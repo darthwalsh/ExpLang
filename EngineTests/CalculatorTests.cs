@@ -19,11 +19,68 @@ namespace EngineTests
 3", Evaluate(@"1; 3"));
     }
 
-    [Ignore] // TODO implement proper variable, not varchar
     [TestMethod]
     public void MultiDigit() {
-      Assert.AreEqual("123", Evaluate("123"));
+      Assert.AreEqual("12", Evaluate("12"));
+      Assert.AreEqual("12", Evaluate("1^1=A; |A=12; 1^1"));
+      Assert.AreEqual(@"Error! Can't evaluate '1 ^ 1'
+    Rules that didn't help:
+        Solving 1 ^ 1 = X got Rules that didn't help:
+            Rule A = A didn't help because 1 ^ 1 is Func but A is Variable
+            Rule 1 ^ 1 = a didn't help because Could not match a to 12 in concatenation
+        Solving X = 1 ^ 1 got Rules that didn't help:
+            Rule A = A didn't help because 1 ^ 1 is Func but A is Variable
+            Rule 1 ^ 1 = a didn't help because X is Variable but 1 ^ 1 is Func
+", EvaluateExplained("1^1=a; |a=12; 1^1", exhaustive: true, expectError: true));
     }
+
+    [TestMethod]
+    public void Cons() {
+      Assert.AreEqual("1", Evaluate("1^A=A; 1^1"));
+      Assert.AreEqual("11", Evaluate("1^A=A; 1^11"));
+      //TODO need to flatten Cons functions into n-arity cons
+      //Assert.AreEqual("123", Evaluate("1^A=A; 1^123"));
+    }
+
+    [Ignore] // TODO need to flatten Cons functions into n-arity cons
+    [TestMethod]
+    public void Cons3() {
+      Assert.AreEqual("123", Evaluate("1^A=A; 1^123"));
+    }
+
+    [Ignore] // TODO should this assign C=1, or is that "too smart?"
+    [TestMethod]
+    public void RepeatedVar() {
+      Assert.AreEqual(@"TODO", EvaluateExplained("1^1=C; |1C=xx; 1^1", exhaustive: true, expectError: true));
+    }
+    /*
+    // TODO add more interesting cases like:
+      a = 1
+      a = a
+      a = b
+      a = 11
+      a = ''
+      a1 = 2b
+      aa = 11
+      aa = 12
+      a1 = 1a
+
+      aA = 1
+      aA = 12
+      aA = 123
+      Aa = 1
+      Aa = 12
+      Aa = 123
+
+      A1A = 212
+      AB = 12
+      A1B = 112
+      AB = 123
+
+      1B1 = A
+      
+
+    */
 
     [TestMethod]
     public void Solve() {
@@ -37,6 +94,7 @@ namespace EngineTests
       Assert.AreEqual(@"3", Evaluate(@"1+1=a; |a=3; 1+1"));
     }
 
+    [Ignore] //TODO figure out how to match unknown variables together, or don't?
     [TestMethod]
     public void UnknownVariable() {
       Assert.IsTrue(GetEvaluation(@"1x").Error);
@@ -161,7 +219,7 @@ a + b = c
         Solving 1 + 1 = x
         Applied rule 1 + 1 = 2 Implies x = 2
         Rules that didn't help:
-            Rule a = a didn't help because 1 + 1 is Func but a is Variable
+            Rule A = A didn't help because 1 + 1 is Func but A is Variable
             Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
             Rule a + b = c didn't help because a + 1 is Func but d is Variable
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
@@ -169,7 +227,7 @@ a + b = c
         Solving y + 1 = 2
         Applied rule 1 + 1 = 2 Implies y = 1
         Rules that didn't help:
-            Rule a = a didn't help because y + 1 is Func but a is Variable
+            Rule A = A didn't help because y + 1 is Func but A is Variable
             Rule 2 + 1 = 3 didn't help because Digit 2 is not 3
             Rule a + b = c didn't help because d + 1 is Func but b is Variable
             Rule 1 + 2 = 3 didn't help because Digit 1 is not 2
@@ -177,13 +235,13 @@ a + b = c
         Solving 2 + 1 = c
         Applied rule 2 + 1 = 3 Implies c = 3
         Rules that didn't help:
-            Rule a = a didn't help because 2 + 1 is Func but a is Variable
+            Rule A = A didn't help because 2 + 1 is Func but A is Variable
             Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
             Rule a + b = c didn't help because a + 1 is Func but x is Variable
             Rule 1 + 2 = 3 didn't help because Digit 2 is not 1
     Redundant rule 1 + 2 = 3
     Rules that didn't help:
-        Rule a = a didn't help because 1 + 2 is Func but a is Variable
+        Rule A = A didn't help because 1 + 2 is Func but A is Variable
         Rule 1 + 1 = 2 didn't help because Digit 2 is not 1
         Rule 2 + 1 = 3 didn't help because Digit 1 is not 2
 ", EvaluateExplained(@"1 + 1 = 2
@@ -196,7 +254,7 @@ a + b = c
 
 1 + 2 = 3
 
-1+2", true));
+1+2", exhaustive: true));
     }
 
     // TODO should have the =2 =3 result language of TestExplainedExhaustiveDifferingError
@@ -208,14 +266,14 @@ a + b = c
     Applied rule 2 ^ 2 = c Implies c = 4, X = 4
     | c = 4 Implies c = 4
         Solving c = 4
-        Applied rule a = a Implies a = 4, c = 4
+        Applied rule A = A Implies A = 4, c = 4
         Rules that didn't help:
             Rule 1 + 1 = 2 didn't help because c is Variable but 1 + 1 is Func
             Rule 1 + 1 = 3 didn't help because c is Variable but 1 + 1 is Func
             Rule 2 ^ 2 = c didn't help because c is Variable but 2 ^ 2 is Func
             Rule 2 ^ 2 = c didn't help because c is Variable but 2 ^ 2 is Func
     Rules that didn't help:
-        Rule a = a didn't help because 2 ^ 2 is Func but a is Variable
+        Rule A = A didn't help because 2 ^ 2 is Func but A is Variable
         Rule 1 + 1 = 2 didn't help because 2 ^ 2 is function ^ but 1 + 1 is function +
         Rule 1 + 1 = 3 didn't help because 2 ^ 2 is function ^ but 1 + 1 is function +
         Rule 2 ^ 2 = c didn't help because 1 + 1 is Func but c is Variable
@@ -228,7 +286,7 @@ a + b = c
 2 ^ 2 = c
 | c = 4
 
-2 ^ 2", true));
+2 ^ 2", exhaustive: true));
     }
 
     [TestMethod]
@@ -237,14 +295,6 @@ a + b = c
 1 + 1 = 3
 
 1 + 1";
-      var eval = GetEvaluation(input);
-      Assert.IsTrue(eval.Error);
-
-      var builder = new StringBuilder();
-      foreach (var r in eval.Results) {
-        Result.Print(r, 0, builder, true);
-      }
-      var actual = builder.ToString();
 
       Assert.AreEqual(@"Error! Can't evaluate '1 + 1'
     Rules that didn't help:
@@ -256,10 +306,10 @@ a + b = c
                 Solving 1 + 1 = X
                 Applied rule 1 + 1 = 3 Implies X = 3
         Solving X = 1 + 1 got Rules that didn't help:
-            Rule a = a didn't help because 1 + 1 is Func but a is Variable
+            Rule A = A didn't help because 1 + 1 is Func but A is Variable
             Rule 1 + 1 = 2 didn't help because X is Variable but 1 + 1 is Func
             Rule 1 + 1 = 3 didn't help because X is Variable but 1 + 1 is Func
-", actual);
+", EvaluateExplained(input, exhaustive: true, expectError: true));
     }
 
     [TestMethod]
@@ -272,10 +322,10 @@ a + b = c
     Applied rule 1 + 2 = c Implies c = 2, c = 2, X = 3
     | a = 3 Implies a = 3
         Solving a = 3
-        Applied rule a = a Implies a = 3, a = 3
+        Applied rule A = A Implies A = 3, a = 3
     | b = 2 Implies b = 2
         Solving b = 2
-        Applied rule a = a Implies a = 2, b = 2
+        Applied rule A = A Implies A = 2, b = 2
 ", EvaluateExplained(@"1 + 2 = c
 | c = 3
 | a = 2
@@ -287,13 +337,13 @@ a + b = c
 
     static string Evaluate(string input) {
       var eval = GetEvaluation(input);
-      Assert.IsFalse(eval.Error);
+      Assert.IsFalse(eval.Error, string.Join(Environment.NewLine, eval.Results.Select(r => r.ToString(true))));
       return string.Join(Environment.NewLine, eval.Results.Select(r => r.Line));
     }
 
-    static string EvaluateExplained(string input, bool exhaustive = false) {
+    static string EvaluateExplained(string input, bool exhaustive = false, bool expectError = false) {
       var eval = GetEvaluation(input);
-      Assert.IsFalse(eval.Error);
+      Assert.AreEqual(expectError, eval.Error);
 
       var builder = new StringBuilder();
       foreach (var r in eval.Results) {

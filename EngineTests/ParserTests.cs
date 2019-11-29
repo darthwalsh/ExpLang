@@ -36,6 +36,12 @@ namespace EngineTests
     }
 
     [TestMethod]
+    public void Vars() {
+      Find(Parse("a"), ExpConstants.VARIABLE);
+      Find(Parse("A"), ExpConstants.VARIABLE);
+    }
+
+    [TestMethod]
     public void Add() {
       var sum = Parse("1+1");
       Find(sum, ExpConstants.DIGIT);

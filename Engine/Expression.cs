@@ -17,7 +17,7 @@ namespace Engine
   {
     static readonly SimpleEquality simpleEquality = new SimpleEquality();
 
-    public Expression(ExpressionType id) {
+    protected Expression(ExpressionType id) {
       Id = id;
     }
 

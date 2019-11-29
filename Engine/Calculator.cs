@@ -9,11 +9,13 @@ namespace Engine
 {
   public class Calculator
   {
-    static readonly Fact reflexive = new Fact(new Func("=", new Character('a'), new Character('a')), new Func[0]);
+    static readonly Fact reflexive = new Fact(new Func("=", new Character('A'), new Character('A')), Array.Empty<Func>());
     static readonly ICollection<Fact> axioms = new List<Fact> { reflexive }.AsReadOnly();
     readonly List<Fact> facts = new List<Fact>(axioms);
     readonly List<Expression> expressions = new List<Expression>();
     readonly List<Result> results = new List<Result>();
+
+    // MAYBE there should a seperation of facts first then expressions to evaluate, like Prolog does
 
     // MAYBE Have a Dictionary<Expression, Env> that also works as a cache, so evaluations aren't repeated
     readonly Dictionary<Expression, bool> recursionCheck = new Dictionary<Expression, bool>();
@@ -313,14 +315,24 @@ namespace Engine
 
       void Solve(Expression x, Expression y) {
         if (x is Character xc && y is Character yc) {
-          if (x.Id == ExpressionType.Variable && TryGetLiteralDigits(y, Env, out var digits) && digits.Length == 1) {
+          if (x.Id == ExpressionType.Variable && TryGetLiteralDigits(y, Env, out var digits)) {
             SetOrAdd(xc.Value, digits);
             return;
           }
-          if (y.Id == ExpressionType.Variable && TryGetLiteralDigits(x, Env, out digits) && digits.Length == 1) {
+          if (y.Id == ExpressionType.Variable && TryGetLiteralDigits(x, Env, out digits)) {
             SetOrAdd(yc.Value, digits);
             return;
           }
+        }
+
+        if (x is Character xUpper && y is Func yCons && SolveUpperCons(xUpper, yCons)) {
+          return;
+        }
+        if (x is Func xCons && y is Character yUpper && SolveUpperCons(yUpper, xCons)) {
+          return;
+        }
+        if (x is Func xCons2 && y is Func yCons2 && SolveUpperCons(xCons2, yCons2)) {
+          return;
         }
 
         if (x.Id != y.Id) {
@@ -355,6 +367,92 @@ namespace Engine
         }
       }
 
+      bool SolveUpperCons(Character upper, Func cons) => SolveUpperCons(new Func(":", upper), cons);
+
+      // Returns true if matching was definitely successful or unsuccesasful.
+      bool SolveUpperCons(Func x, Func y) {
+        if (x.Name != ":" || y.Name != ":") {
+          return false;
+        }
+
+        var consArgs = x.Children.Concat(y.Children);
+        var nonChar = consArgs.Where(arg => arg.Id != ExpressionType.Digit && arg.Id != ExpressionType.Variable).FirstOrDefault();
+        if (nonChar != null) {
+          NoMatch($"Not possible to concatenate non-digit {nonChar}");
+          return true;
+        }
+        var vars = consArgs.OfType<Character>().Where(c => !char.IsDigit(c.Value)).Select(c => c.Value);
+        var group = vars.GroupBy(c => c).Where(g => g.Count() > 1).FirstOrDefault();
+        if (group != null) {
+          NoMatch($"Not allowed to reuse variable {group.Key} in concatenation");
+          return true;
+        }
+
+        var xs = string.Concat(x.Children.Cast<Character>().Select(c => c.Value));
+        var ys = string.Concat(y.Children.Cast<Character>().Select(c => c.Value));
+        var consEx = ConsEx(xs, ys, Env);
+        if (consEx == null) {
+          NoMatch($"Could not match {xs} to {ys} in concatenation");
+          return true;
+        }
+        foreach (var (key, value) in consEx) {
+          SetOrAdd(key, value);
+        }
+        return true;
+      }
+
+      // MAYBE in dotnetcore 3.0 use indexes or Span to save string allocs
+      static Environment ConsEx(string x, string y, Environment env) {
+        if ((x == "") || (y == "")) {
+          return (x == "") && (y == "") ? env : null;
+        }
+
+        var a = x[0];
+        var b = y[0];
+        
+        if (char.IsDigit(a) && char.IsDigit(b)) {
+          return a == b ? ConsEx(x.Substring(1), y.Substring(1), env) : null;
+        }
+        if (char.IsDigit(a) && !char.IsDigit(b)) {
+          return ConsEx(b, y.Substring(1), x, env);
+        }
+        if (!char.IsDigit(a) && char.IsDigit(b)) {
+          return ConsEx(a, x.Substring(1), y, env);
+        }
+        throw new NotImplementedException("two variables?"); // TODO TODO need to figure out the right semantics for a = b
+      }
+
+      static Environment ConsEx(char var, string vs, string y, Environment env) {
+        if (env.TryGetValue(var, out var value)) {
+          return y.StartsWith(value) ? ConsEx(vs, y.Substring(value.Length), env) : null;
+        }
+        if (char.IsLower(var)) {
+          var nextEnv = new Environment(env) {
+            [var] = y[0].ToString() // MAYBE this assumes that y[0] will be a variable?
+          };
+          return ConsEx(vs, y.Substring(1), nextEnv);
+        }
+
+        Environment upperEnv = null;
+        for (var i = 1; i <= y.Length; ++i) {
+          var nextEnv = new Environment(env);
+          value = y.Substring(0, i);
+          if (value.Any(char.IsLetter)) {
+            throw new NotImplementedException("two variables?"); // TODO TODO need to figure out the right semantics for a = b
+          }
+          nextEnv[var] = value;
+          var attempt = ConsEx(vs, y.Substring(i), nextEnv);
+          if (attempt == null) {
+            continue;
+          }
+          if (upperEnv != null && (upperEnv.Count != attempt.Count || upperEnv.Except(attempt).Any())) {
+            return null;
+          }
+          upperEnv = attempt;
+        }
+        return upperEnv;
+      }
+
       void NoMatch(string r) {
         matches = false;
         if (reason == null) {
@@ -376,6 +474,8 @@ namespace Engine
           if (value != digits) {
             NoMatch($"Variable {name} was already {value} and cannot be {digits}");
           }
+        } else if (char.IsLower(name) && digits.Length > 1) {
+          NoMatch($"Variable {name} cannot be multiple digits {digits}");
         } else {
           Env.Add(name, digits);
         }
