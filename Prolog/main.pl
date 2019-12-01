@@ -5,57 +5,39 @@
   Run without arguments to test many permutations
 */
 
-% TODO possible to rewrite with all vars by creating an array like length(X, 4)?
-
-solve(X, Y, Env) :-
-    string(X),
-    string(Y),
+solveS(X, Y, Env) :-
     string_chars(X, XX),
     string_chars(Y, YY),
-    solve(XX, YY, Env).
+    solve(XX, YY, Env),
+    get_vals(Env, Vals),
+    nonvars(Vals).
+
+get_vals(Dict, Vals) :-
+    findall(Val, get_dict(_Key, Dict, Val), Vals).
+
+nonvars([]).
+nonvars([H | T]) :-
+    nonvar(H),
+    nonvars(T).
 
 solve([], [], ''{}).
 
-solve([H | X], [H | Y], Env) :-
-    char_type(H, digit),
-    solve(X, Y, Env).
-
 solve([A | X], [B | Y], Env) :-
-    char_type(A, lower),
-    char_type(B, digit),
-    solve(X, Y, E),
-    put_if(A, E, B, Env).
+    solve(X, Y, Env2),
+    lookup(A, Env2, C, Env3),
+    lookup(B, Env3, C, Env).
 
-solve([A | X], [B | Y], Env) :-
-    char_type(A, digit),
-    char_type(B, lower),
-    solve(X, Y, E),
-    put_if(B, E, A, Env).
+lookup(D, Env, D, Env) :-
+    char_type(D, digit).
 
-solve([A | X], [B | Y], Env) :-
-    char_type(A, lower),
-    char_type(B, lower),
-    solve(X, Y, Env),
-    validate_both(A, B, Env).
+lookup(C, Env, D, Env) :-
+    char_type(C, lower),
+    get_dict(C, Env, D).
 
-put_if(Key, Dict, Value, Dict) :-
-    get_dict(Key, Dict, Value).
-
-put_if(Key, Dict, Value, Res) :-
-    \+ get_dict(Key, Dict, _),
-    put_dict(Key, Dict, Value, Res).
-
-validate_both(A, B, Env) :-
-    get_dict(A, Env, Val),
-    get_dict(B, Env, Val).
-
-validate_both(A, B, Env) :-
-    get_dict(A, Env, _),
-    \+ get_dict(B, Env, _).
-
-validate_both(A, B, Env) :-
-    \+ get_dict(A, Env, _),
-    get_dict(B, Env, _).
+lookup(C, Env, D, Env2) :-
+    char_type(C, lower),
+    \+ get_dict(C, Env, _),
+    put_dict(C, Env, D, Env2).
 
 genC("1").
 genC("2").
@@ -64,17 +46,19 @@ genC("a").
 genC("b").
 % genC("c").
 
-gen(X) :-
-    genC(A),
-    genC(B),
+gen(0, "").
+
+gen(N, S) :-
+    N > 0,
+    M is N - 1,
+    gen(M, P),
     genC(C),
-    string_concat(A, B, AB),
-    string_concat(AB, C, X).
+    string_concat(P, C, S).
 
 genMain :-
-    gen(XS),
-    gen(YS),
-    solve(XS, YS, Env), 
+    gen(3, XS),
+    gen(3, YS),
+    solveS(XS, YS, Env), 
     writef("%w = %w => %w\n", [XS, YS, Env]),
     false.
 
@@ -86,5 +70,5 @@ main :-
     current_prolog_flag(argv, [X, Y]),
     atom_string(X, XS),
     atom_string(Y, YS),
-    solve(XS, YS, Env), 
+    solveS(XS, YS, Env), 
     write_term(Env, [nl(true)]).
