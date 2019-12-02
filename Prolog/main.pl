@@ -5,46 +5,72 @@
   Run without arguments to test many permutations
 */
 
-solveS(X, Y, Env) :-
+solveS(X, Y, Env2) :-
     string_chars(X, XX),
     string_chars(Y, YY),
     solve(XX, YY, Env),
-    get_vals(Env, Vals),
-    nonvars(Vals).
+    dict_pairs(Env, _, Pairs),
+    flatten_pairs(Pairs, SPairs),
+    dict_pairs(Env2, '', SPairs).
 
-get_vals(Dict, Vals) :-
-    findall(Val, get_dict(_Key, Dict, Val), Vals).
-
-nonvars([]).
-nonvars([H | T]) :-
-    nonvar(H),
-    nonvars(T).
+flatten_pairs([], []).
+flatten_pairs([K-Cs | A], [K-S | B]) :-
+    forall(member(V, Cs), nonvar(V)),
+    string_chars(S, Cs),
+    flatten_pairs(A, B).
 
 solve([], [], ''{}).
 
 solve([A | X], [B | Y], Env) :-
+    \+ char_type(A, upper),
+    \+ char_type(B, upper),
     solve(X, Y, Env2),
     lookup(A, Env2, C, Env3),
-    lookup(B, Env3, C, Env).
+    lookup(B, Env3, C, Env),
+    C = [_].
 
-lookup(D, Env, D, Env) :-
+solve([A | X], Y, Env) :-
+    char_type(A, upper),
+    append(Yhead, Ytail, Y),
+    solve(X, Ytail, Env1),
+    lookup_many(Yhead, Env1, YC, Env2),
+    [_|_] = YC,
+    lookup(A, Env2, YC, Env).
+
+solve(X, [B | Y], Env) :-
+    char_type(B, upper),
+    solve([B | Y], X, Env).
+
+lookup(D, Env, [D], Env) :-
     char_type(D, digit).
 
 lookup(C, Env, D, Env) :-
-    char_type(C, lower),
+    char_type(C, alpha),
     get_dict(C, Env, D).
 
-lookup(C, Env, D, Env2) :-
+lookup(C, Env, [D], Env2) :-
     char_type(C, lower),
+    \+ get_dict(C, Env, _),
+    put_dict(C, Env, [D], Env2).
+
+lookup(C, Env, D, Env2) :-
+    char_type(C, upper),
     \+ get_dict(C, Env, _),
     put_dict(C, Env, D, Env2).
 
+lookup_many([], Env, [], Env).
+lookup_many([C | Cs], Env, Dn, Env2) :-
+    lookup(C, Env, D, Env1),
+    append(D, Ds, Dn),
+    lookup_many(Cs, Env1, Ds, Env2).
+
 genC("1").
 genC("2").
-% genC("3").
+genC("3").
 genC("a").
 genC("b").
-% genC("c").
+genC("C").
+genC("D").
 
 gen(0, "").
 
