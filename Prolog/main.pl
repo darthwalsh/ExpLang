@@ -61,8 +61,16 @@ lookup(C, Env, D, Env2) :-
 lookup_many([], Env, [], Env).
 lookup_many([C | Cs], Env, Dn, Env2) :-
     lookup(C, Env, D, Env1),
-    append(D, Ds, Dn),
+    appendShort(D, Ds, Dn), % TODO why does this not work, and why does lookup_many(['A'], r{}, Ds, E). only give two ans?
     lookup_many(Cs, Env1, Ds, Env2).
+
+appendShort([], L, L).
+appendShort([H | L1], L2, [H | L3]) :-
+    appendShort(L1, L2, L3),
+    length(L3, Len),
+    (  Len < 50
+    -> 1 = 1
+    ;  !).
 
 genC("1").
 genC("2").
