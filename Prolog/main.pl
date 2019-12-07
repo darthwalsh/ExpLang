@@ -5,6 +5,7 @@
   Run without arguments to test many permutations
 */
 
+% TODO still mising some cases like solved("C111", "111C", E). doesn't find C=11111 ?
 solved(X, Y, Env) :-
     solveS(X, Y, Env1),
     dict_pairs(Env1, _, Pairs),
@@ -13,6 +14,7 @@ solved(X, Y, Env) :-
 
 flatten_pairs([], []).
 flatten_pairs([K-Cs | A], [K-S | B]) :-
+    [_|_] = Cs,
     forall(member(V, Cs), nonvar(V)),
     string_chars(S, Cs),
     flatten_pairs(A, B).
@@ -93,7 +95,6 @@ genC("C").
 genC("D").
 
 gen(0, "").
-
 gen(N, S) :-
     N > 0,
     M is N - 1,
@@ -102,11 +103,12 @@ gen(N, S) :-
     string_concat(P, C, S).
 
 genMain :-
-    gen(3, XS),
-    gen(3, YS),
+    Max is 3,
+    findall(S, (between(1, Max, N), gen(N, S)), Out), member(XS, Out),
+    findall(S, (between(1, Max, N), gen(N, S)), Out), member(YS, Out),
     solved(XS, YS, Env), 
     writef("%w = %w => %w\n", [XS, YS, Env]),
-    false.
+    false. 
 
 main :-
     current_prolog_flag(argv, []),

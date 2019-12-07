@@ -22,6 +22,8 @@ Repeated variables need to contain the same value.
 
 An **expression** is two strings: *string* `=` *string*
 
+Each string must match the same string. This can be thought of using the RegEx *and* operator to say that two different capture strings must match some test input, and finding all possible capture groups for any test string.
+
 | ExpLang expression | Captures                                                 |
 | ------------------ | -------------------------------------------------------- |
 | `a2c` = `1b3`      | a: `1`, b: `2`, c: `3`                                   |
