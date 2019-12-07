@@ -5,19 +5,22 @@
   Run without arguments to test many permutations
 */
 
-solveS(X, Y, Env2) :-
-    string_chars(X, XX),
-    string_chars(Y, YY),
-    solve(XX, YY, Env),
-    dict_pairs(Env, _, Pairs),
+solved(X, Y, Env) :-
+    solveS(X, Y, Env1),
+    dict_pairs(Env1, _, Pairs),
     flatten_pairs(Pairs, SPairs),
-    dict_pairs(Env2, '', SPairs).
+    dict_pairs(Env, '', SPairs).
 
 flatten_pairs([], []).
 flatten_pairs([K-Cs | A], [K-S | B]) :-
     forall(member(V, Cs), nonvar(V)),
     string_chars(S, Cs),
     flatten_pairs(A, B).
+
+solveS(X, Y, Env) :-
+    string_chars(X, XX),
+    string_chars(Y, YY),
+    solve(XX, YY, Env).
 
 solve([], [], ''{}).
 
@@ -37,9 +40,10 @@ solve([A | X], Y, Env) :-
     [_|_] = YC,
     lookup(A, Env2, YC, Env).
 
-solve(X, [B | Y], Env) :-
+solve([A | X], [B | Y], Env) :-
     char_type(B, upper),
-    solve([B | Y], X, Env).
+    \+ char_type(A, upper),
+    solve([B | Y], [A | X], Env).
 
 lookup(D, Env, [D], Env) :-
     char_type(D, digit).
@@ -61,16 +65,24 @@ lookup(C, Env, D, Env2) :-
 lookup_many([], Env, [], Env).
 lookup_many([C | Cs], Env, Dn, Env2) :-
     lookup(C, Env, D, Env1),
-    appendShort(D, Ds, Dn), % TODO why does this not work, and why does lookup_many(['A'], r{}, Ds, E). only give two ans?
+    append_max(6, D, Ds, Dn), % HACK hardcoded max length of upper
     lookup_many(Cs, Env1, Ds, Env2).
 
-appendShort([], L, L).
-appendShort([H | L1], L2, [H | L3]) :-
-    appendShort(L1, L2, L3),
-    length(L3, Len),
-    (  Len < 50
-    -> 1 = 1
-    ;  !).
+% Hacked versions of append and length that terminate at maximum length.
+append_max(_, [], L, L).
+append_max(Max, [H | L1], L2, [H | L3]) :-
+    length_max(Max, L1, Len1),
+    length_max(Max, L2, Len2),
+    Len1 + Len2 < Max,
+    append_max(Max, L1, L2, L3).
+
+length_max(_, [], 0).
+length_max(Max, [_ | T], Len) :-
+    length_max(Max, T, SubLen),
+    Len is SubLen + 1,
+    (  Len =< Max
+    -> true
+    ;  !, false).
 
 genC("1").
 genC("2").
@@ -92,7 +104,7 @@ gen(N, S) :-
 genMain :-
     gen(3, XS),
     gen(3, YS),
-    solveS(XS, YS, Env), 
+    solved(XS, YS, Env), 
     writef("%w = %w => %w\n", [XS, YS, Env]),
     false.
 
@@ -104,5 +116,5 @@ main :-
     current_prolog_flag(argv, [X, Y]),
     atom_string(X, XS),
     atom_string(Y, YS),
-    solveS(XS, YS, Env), 
+    solved(XS, YS, Env), 
     write_term(Env, [nl(true)]).
