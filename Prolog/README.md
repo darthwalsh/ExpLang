@@ -27,7 +27,7 @@ Each string must match the same string. This can be thought of using the RegEx *
 | ExpLang expression | Captures                                                 |
 | ------------------ | -------------------------------------------------------- |
 | `a2c` = `1b3`      | a: `1`, b: `2`, c: `3`                                   |
-| `12` = `34`        | *doesn't match because 1 != 2*                           |
+| `12` = `34`        | *doesn't match because 1 != 3*                           |
 | `a` = `b`          | *doesn't match because a doesn't resolve to a literal*   |
 | `A3` = `12b`       | A: `12`, b: `3`                                          |
 | `AB` = `123`       | A: `12`, B: `3` *or* A: `1`, B: `23`                     |
