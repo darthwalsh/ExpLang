@@ -119,4 +119,4 @@ main :-
     atom_string(X, XS),
     atom_string(Y, YS),
     solved(XS, YS, Env), 
-    write_term(Env, [nl(true)]).
+    write_term(Env, [nl(true)]), false; true.
