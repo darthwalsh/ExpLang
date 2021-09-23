@@ -4,7 +4,7 @@
 
 Simple math [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for defining arithmetic operations.
 
-Try it online: https://explang.azurewebsites.net/
+~~Try it online: https://explang.azurewebsites.net/~~  Azure took down my account :\\
 
 ## Running Locally
 
