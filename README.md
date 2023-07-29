@@ -42,6 +42,8 @@ A rule matches if every rule and where equality matches. Every variable must hav
 
 ## Pending work
 
-- [ ] website frontend
-- [ ] github pages with CNAME expl.carlwa.com
+- [x] website frontend
+- [x] github pages with CNAME https://exp.carlwa.com
+- [ ] write calc engine
+- [ ] favicon
 - [ ] Copy notes from OneNote

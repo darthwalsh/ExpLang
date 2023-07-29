@@ -60,18 +60,9 @@ function addResult(e, result, indent) {
 }
 
 async function run() {
-  let result = "Oops";
+  let result;
   try {
-    var request = await fetch("values", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text: $("input").value
-      })
-    });
-    result = await request.json();
+    result = evaluate($("input").value);
   } catch (ex) {
     $("output").textContent = `js error: ${ex}`;
     $("output").style.color = "red";
