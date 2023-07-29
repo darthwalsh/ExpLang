@@ -1,16 +1,8 @@
 # ExpLang = Explained Language
 
-[![Build status](https://darthwalsh.visualstudio.com/ExpLang/_apis/build/status/ExpLang-Azure%20Web%20App%20for%20ASP.NET-CI)](https://darthwalsh.visualstudio.com/ExpLang/_build/latest?definitionId=3)
-
 Simple math [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for defining arithmetic operations.
 
-~~Try it online: https://explang.azurewebsites.net/~~  Azure took down my account :\\
-
-## Running Locally
-
-Building will download and execute [Grammatica](https://github.com/cederberg/grammatica) to generate source code.
-
-## Language
+## Language Definition
 
 A base-4 adding program
 
@@ -48,6 +40,8 @@ Each rule is checked to see if the expression matches the rule. If multiple rule
 
 A rule matches if every rule and where equality matches. Every variable must have a unique value. Lowercase variables must have a single-digit value. Uppercase variables may have a value of one or more digits.
 
-## Deploying
+## Pending work
 
-Run `az webapp deployment list-publishing-profiles --name explang --resource-group darthwalsh` to get `userPWD`
+- [ ] website frontend
+- [ ] github pages with CNAME expl.carlwa.com
+- [ ] Copy notes from OneNote

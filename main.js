@@ -75,6 +75,7 @@ async function run() {
   } catch (ex) {
     $("output").textContent = `js error: ${ex}`;
     $("output").style.color = "red";
+    return;
   }
   
   while ($("output").firstChild) {
