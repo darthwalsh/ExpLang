@@ -1,0 +1,17 @@
+{
+  "name": "explang",
+  "version": "0.0.2",
+  "description": "Simple math DSL",
+  "type": "module",
+  "scripts": {
+    "test": "jasmine",
+    "test:watch": "nodemon -e js --exec \"npm run test\""
+  },
+  "keywords": [],
+  "author": "Carl Walsh",
+  "license": "MIT",
+  "devDependencies": {
+    "jasmine": "^5.1.0",
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,4 +1,29 @@
-function evaluate(text) {
+/** @typedef {{va: boolean, s: string}} Token */
+
+const tokenRegex = /[^\$]+|\$\w+/g;
+/**
+ * @param {string} text
+ * @returns {Token[]}
+ */
+export function parseExpr(text) {
+  const tokens = [];
+  let match;
+  while ((match = tokenRegex.exec(text)) !== null) {
+    let s = match[0];
+    const va = s[0] === "$";
+    if (va) s = s.slice(1);
+    tokens.push({va, s});
+  }
+
+  return tokens;
+}
+
+/** @typedef {{children: Result[], line: string}} Result */
+/**
+ * @param {string} text
+ * @returns {{results: Result[], error: boolean}}
+ */
+export function evaluate(text) {
   return {
     "results": [
       {

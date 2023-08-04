@@ -11,24 +11,19 @@ A base-4 adding program
     2 + 1 = 3
     3 + 1 = 10
 
-    a + b = c
-    | a + 1 = x
-    | y + 1 = b
-    | x + y = c
+    $a + $b = $c
+    | $a + 1 = $x
+    | $y + 1 = $b
+    | $x + $y = $c
+
+    ---
 
     2 + 1
     1 + 3
 
-A **program** is multiple lines of *rules* and *expressions*.
+A **program** is multiple lines of *rules* then `---` then some *expressions*.
 
-An **expression** is a
-
-* number e.g. `3`
-* lowercase variable for single characters e.g. `a`
-* uppercase variables for any number of characters e.g. `A`
-* simple arithmetic operation of numbers or variables e.g. `3 + ab`
-
-A **rule** is *expression* `=` *expression*, optionally followed by where patterns.
+An **rule** is any text, where `$` followed by an identifier is a variable.
 
 A **where pattern** is `|` *rule*.
 
@@ -45,5 +40,6 @@ A rule matches if every rule and where equality matches. Every variable must hav
 - [x] website frontend
 - [x] github pages with CNAME https://exp.carlwa.com
 - [ ] write calc engine
+  - [ ] allow spaces
 - [ ] favicon
 - [ ] Copy notes from OneNote

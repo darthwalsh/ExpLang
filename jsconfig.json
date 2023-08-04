@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "skipLibCheck": true,
+    "lib": ["DOM", "ES2021"],
+    "target": "ESNext",
+    "checkJs": true,
+    "moduleResolution": "classic",
+
+    "noImplicitReturns": true,
+    "strict": true,
+    "noUnusedLocals": true
+  },
+
+  "exclude": ["main.js"] // MAYBE include proper type checks
+}

@@ -1,4 +1,4 @@
-"use strict";
+import {evaluate} from "./calc.js";
 
 function $(id) {
   return document.getElementById(id);
@@ -23,14 +23,14 @@ function triangleClick(e) {
 function addResult(e, result, indent) {
   const explainChecked = $("explain").checked;
   const exhaustive = result.line === "Rules that didn't help:";
-  
+
   let triangle = null;
   if (result.children.length) {
     triangle = document.createElement("pre");
     triangle.className = "triangle";
     if (exhaustive) {
       triangle.className += " exhaustive";
-   }
+    }
     triangle.style.marginLeft = indent * 4 + "ch";
     triangle.textContent = expanded;
     triangle.onclick = triangleClick;
@@ -52,9 +52,9 @@ function addResult(e, result, indent) {
     }
     result.children.forEach(r => addResult(div, r, indent + 1));
     e.appendChild(div);
-  
+
     if (!explainChecked) {
-      triangleClick({ target: triangle });
+      triangleClick({target: triangle});
     }
   }
 }
@@ -68,7 +68,7 @@ async function run() {
     $("output").style.color = "red";
     return;
   }
-  
+
   while ($("output").firstChild) {
     $("output").removeChild($("output").firstChild);
   }
@@ -85,19 +85,21 @@ window.onload = () => {
     $("explain").checked = true;
     $("exhaustiveSpan").style.display = "";
   }
-  const exhaustiveRule = [...document.styleSheets[0].cssRules].filter(r => r.selectorText === ".exhaustive")[0];
+  const exhaustiveRule = [...document.styleSheets[0].cssRules].filter(
+    r => r.selectorText === ".exhaustive"
+  )[0];
   if (localStorage.getItem("exhaustive")) {
     $("exhaustive").checked = true;
     exhaustiveRule.style.display = "";
   }
-    
+
   $("explain").addEventListener("click", () => {
     const checked = $("explain").checked;
     localStorage.setItem("explain", checked ? "true" : "");
     [...document.getElementsByClassName("triangle")].forEach(triangle => {
       const isExpanded = triangle.textContent === expanded;
       if (isExpanded !== checked) {
-        triangleClick({ target: triangle });
+        triangleClick({target: triangle});
       }
     });
 
@@ -111,8 +113,7 @@ window.onload = () => {
     exhaustiveRule.style.display = checked ? "" : "none";
   });
 
-  $("input").addEventListener("input", () =>
-    localStorage.setItem("in", $("input").value));
+  $("input").addEventListener("input", () => localStorage.setItem("in", $("input").value));
   $("input").addEventListener("keydown", e => {
     if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
       run();
@@ -137,7 +138,7 @@ ${codeBlock}
 ${$("input").value}
 ${codeBlock}`;
     const url = `https://github.com/darthwalsh/ExpLang/issues/new?body=${encodeURIComponent(body)}`;
-    var win = window.open(url, '_blank');
+    var win = window.open(url, "_blank");
     win.focus();
   };
 };
