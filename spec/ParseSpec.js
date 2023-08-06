@@ -1,11 +1,21 @@
-import {parseExpr} from "../calc.js";
+import {parseExpr, parseFacts} from "../calc.js";
+
+/**
+ * @typedef {import('../calc.js').Token} Token
+ * @typedef {import('../calc.js').Fact} Fact
+ */
 
 /** @param {string} s */
 function lit(s) {
   return {va: false, s};
 }
 
-describe("Parses", function () {
+/** @param {string} s */
+function va(s) {
+  return {va: true, s};
+}
+
+describe("parseExpr", function () {
   it("literal text", function () {
     expect(parseExpr("")).toEqual([]);
     expect(parseExpr("a")).toEqual([lit("a")]);
@@ -15,8 +25,35 @@ describe("Parses", function () {
   });
 
   it("variables", function () {
-    expect(parseExpr("$a")).toEqual([{va: true, s: "a"}]);
-    expect(parseExpr("$X9")).toEqual([{va: true, s: "X9"}]);
-    expect(parseExpr("$a + $X")).toEqual([{va: true, s: "a"}, lit(" + "), {va: true, s: "X"}]);
+    expect(parseExpr("$a")).toEqual([va("a")]);
+    expect(parseExpr("$X9")).toEqual([va("X9")]);
+    expect(parseExpr("$a + $X")).toEqual([va("a"), lit(" + "), va("X")]);
+  });
+});
+
+/**
+ * @param {Token[]} expr
+ * @param {Token[][]} wheres
+ * @returns {Fact}
+ */
+function fact(expr, ...wheres) {
+  return {expr, wheres};
+}
+describe("parseFacts", function () {
+  it("parses", function () {
+    const expr = `
+1=1
+|2=2
+
+3=3
+| 4=4
+|5=5
+6=6
+`
+    expect(parseFacts(expr)).toEqual([
+      fact([lit("1=1")], [lit("2=2")]),
+      fact([lit("3=3")], [lit("4=4")], [lit("5=5")]),
+      fact([lit("6=6")]),
+    ]);
   });
 });

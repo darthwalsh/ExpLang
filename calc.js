@@ -1,6 +1,6 @@
-/** @typedef {{va: boolean, s: string}} Token */
 
 const tokenRegex = /[^\$]+|\$\w+/g;
+/** @typedef {{va: boolean, s: string}} Token */
 /**
  * @param {string} text
  * @returns {Token[]}
@@ -16,6 +16,28 @@ export function parseExpr(text) {
   }
 
   return tokens;
+}
+
+/** @typedef {{expr: Token[], wheres: Token[][]}} Fact */
+/**
+ * @param {string} text
+ * @returns {Fact[]}
+ */
+export function parseFacts(text) {
+  const facts = /** @type {Fact[]} */([]);
+  for (const line of text.split("\n")) {
+    if (!line) continue;
+
+    if (line.startsWith("|")) {
+      if (!facts.length) throw new Error("Where without fact");
+      const expr = parseExpr(line.substring(1).trim());
+      facts[facts.length - 1].wheres.push(expr);
+    } else {
+      const expr = parseExpr(line.trim());
+      facts.push({expr, wheres: []});
+    }
+  }
+  return facts;
 }
 
 /** @typedef {{children: Result[], line: string}} Result */
